@@ -2,14 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Streak" />
+  <meta name="theme-color" content="#0a0a0a" />
   <title>Streak — Daily Discipline Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@800&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet" />
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "aaaa6422-7202-4d6e-8010-618cb66ac95e",
+        allowLocalhostAsSecureOrigin: true,
+        notifyButton: { enable: false },
+      });
+      window._oneSignalReady = true;
+    });
+  </script>
   <style>
     /* ── VARIABLES & RESET ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * { -webkit-tap-highlight-color: transparent; }
 
     :root {
       --bg:       #0a0a0a;
@@ -33,6 +50,7 @@
       color: var(--text);
       min-height: 100dvh;
       -webkit-font-smoothing: antialiased;
+      padding-bottom: env(safe-area-inset-bottom);
     }
 
     /* ── ONBOARDING ── */
@@ -89,6 +107,7 @@
       width: 100%;
       outline: none;
       transition: border-color 0.2s;
+      -webkit-appearance: none;
     }
 
     .onboard-form input:focus { border-color: var(--accent); }
@@ -118,7 +137,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1.2rem 1.4rem 0;
+      padding: calc(1.2rem + env(safe-area-inset-top)) 1.4rem 0;
     }
 
     .topbar-wordmark {
@@ -175,11 +194,12 @@
       border-bottom: 1px solid var(--accent);
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
-      font-size: 0.8rem;
+      font-size: 1rem;
       font-weight: 500;
       outline: none;
       padding: 0 0 2px;
       width: 160px;
+      -webkit-appearance: none;
     }
 
     .goal-save-btn {
@@ -197,10 +217,14 @@
     /* ── NAVIGATION ── */
     #nav {
       display: flex;
-      justify-content: center;
-      gap: 0.5rem;
+      gap: 0.4rem;
       padding: 1rem 1.4rem 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
     }
+
+    #nav::-webkit-scrollbar { display: none; }
 
     .nav-btn {
       background: none;
@@ -212,9 +236,11 @@
       font-size: 0.78rem;
       font-weight: 500;
       letter-spacing: 0.06em;
-      padding: 0.45rem 0.9rem;
+      padding: 0.45rem 0.85rem;
       text-transform: uppercase;
       transition: all 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .nav-btn:hover { border-color: var(--muted); color: var(--text); }
@@ -539,12 +565,13 @@
       border-radius: 8px;
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem;
+      font-size: 1rem;
       padding: 0.7rem 0.9rem;
       width: 100%;
       outline: none;
       transition: border-color 0.2s;
       margin-bottom: 0.6rem;
+      -webkit-appearance: none;
     }
 
     .settings-input:focus { border-color: var(--accent); }
@@ -650,7 +677,7 @@
       border-radius: 10px;
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
+      font-size: 1rem;
       padding: 0.8rem 1rem;
       width: 100%;
       resize: none;
@@ -658,6 +685,7 @@
       transition: border-color 0.2s;
       margin-bottom: 1rem;
       min-height: 80px;
+      -webkit-appearance: none;
     }
 
     .modal-note:focus { border-color: var(--accent); }
@@ -753,6 +781,281 @@
       text-transform: uppercase;
     }
 
+    /* ── BADGES SCREEN ── */
+    .badges-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.8rem;
+    }
+
+    .badge-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.2rem 1rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .badge-card.earned {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, #141414 60%, #1e2200 100%);
+    }
+
+    .badge-card.earned::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(232,245,90,0.06) 50%, transparent 70%);
+      animation: badgeShine 3s infinite;
+    }
+
+    @keyframes badgeShine {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(200%); }
+    }
+
+    .badge-card.locked {
+      opacity: 0.38;
+      filter: grayscale(1);
+    }
+
+    .badge-icon {
+      font-size: 2.4rem;
+      display: block;
+      margin-bottom: 0.5rem;
+      line-height: 1;
+    }
+
+    .badge-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .badge-card.earned .badge-name { color: var(--accent); }
+
+    .badge-desc {
+      font-size: 0.68rem;
+      color: var(--sub);
+      line-height: 1.4;
+    }
+
+    .badge-earned-date {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--accent);
+      margin-top: 0.4rem;
+      opacity: 0.7;
+    }
+
+    .badge-lock-icon {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.6rem;
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    /* ── BADGE CELEBRATION ── */
+    #badge-celebration {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      backdrop-filter: blur(8px);
+      z-index: 160;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    #badge-celebration.open { display: flex; }
+
+    .badge-cel-unlocked {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      animation: fadeSlideDown 0.5s ease forwards;
+    }
+
+    .badge-cel-icon {
+      font-size: 5.5rem;
+      line-height: 1;
+      margin-bottom: 1rem;
+      animation: badgePop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      filter: drop-shadow(0 0 30px rgba(232,245,90,0.5));
+    }
+
+    .badge-cel-glow {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(232,245,90,0.15) 0%, transparent 70%);
+      position: absolute;
+      animation: glowPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50%       { transform: scale(1.3); opacity: 1; }
+    }
+
+    @keyframes badgePop {
+      0%   { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+      70%  { transform: scale(1.15) rotate(3deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .badge-cel-name {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.8rem, 6vw, 2.6rem);
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      animation: fadeSlideUp 0.5s 0.3s ease both;
+    }
+
+    .badge-cel-desc {
+      font-size: 0.95rem;
+      color: var(--sub);
+      max-width: 280px;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+      animation: fadeSlideUp 0.5s 0.45s ease both;
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .badge-cel-close {
+      background: var(--accent);
+      border: none;
+      border-radius: 40px;
+      color: #0a0a0a;
+      cursor: pointer;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+      padding: 0.8rem 2.5rem;
+      text-transform: uppercase;
+      animation: fadeSlideUp 0.5s 0.6s ease both;
+      transition: transform 0.1s, opacity 0.15s;
+    }
+
+    .badge-cel-close:hover { opacity: 0.85; }
+    .badge-cel-close:active { transform: scale(0.97); }
+
+    /* ── NOTIFICATION BANNER ── */
+    #notif-banner {
+      display: none;
+      margin: 1rem 1.4rem 0;
+      max-width: 452px;
+      margin-left: auto;
+      margin-right: auto;
+      background: linear-gradient(135deg, #1a2200, #141414);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+    }
+
+    #notif-banner.show { display: block; }
+
+    .notif-banner-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      color: var(--accent);
+      margin-bottom: 0.3rem;
+    }
+
+    .notif-banner-sub {
+      font-size: 0.78rem;
+      color: var(--sub);
+      line-height: 1.5;
+      margin-bottom: 0.8rem;
+    }
+
+    .notif-banner-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+    .notif-banner-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #0a0a0a;
+      cursor: pointer;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      padding: 0.5rem 1rem;
+      text-transform: uppercase;
+    }
+
+    .notif-banner-dismiss {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.78rem;
+      padding: 0.5rem;
+    }
+
+    #ios-banner {
+      display: none;
+      margin: 1rem 1.4rem 0;
+      max-width: 452px;
+      margin-left: auto;
+      margin-right: auto;
+      background: #0d1a2e;
+      border: 1px solid #1a4a8a;
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+    }
+
+    #ios-banner.show { display: block; }
+
+    .ios-banner-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      color: #4da6ff;
+      margin-bottom: 0.4rem;
+    }
+
+    .ios-banner-steps {
+      font-size: 0.78rem;
+      color: var(--sub);
+      line-height: 1.9;
+      margin-bottom: 0.6rem;
+    }
+
+    .ios-banner-steps span { color: var(--text); font-weight: 500; }
+
+    .ios-banner-dismiss {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 0;
+    }
+
     /* ── UTILITY ── */
     .hidden { display: none !important; }
     .text-center { text-align: center; }
@@ -790,7 +1093,30 @@
     <button class="nav-btn active" data-screen="dashboard">Today</button>
     <button class="nav-btn"        data-screen="calendar">History</button>
     <button class="nav-btn"        data-screen="stats">Stats</button>
+    <button class="nav-btn"        data-screen="badges">Badges</button>
     <button class="nav-btn"        data-screen="settings">Settings</button>
+  </div>
+
+  <!-- NOTIFICATION BANNER (Android / desktop) -->
+  <div id="notif-banner">
+    <div class="notif-banner-title">🔔 Never miss a day</div>
+    <div class="notif-banner-sub">Get a morning and evening reminder so your streak stays alive.</div>
+    <div class="notif-banner-actions">
+      <button class="notif-banner-btn" onclick="bannerEnableNotifs()">Enable Reminders</button>
+      <button class="notif-banner-dismiss" onclick="dismissNotifBanner()">Not now</button>
+    </div>
+  </div>
+
+  <!-- IOS ADD TO HOME SCREEN BANNER -->
+  <div id="ios-banner">
+    <div class="ios-banner-title">📲 Add to Home Screen for Reminders</div>
+    <div class="ios-banner-steps">
+      1. Tap the <span>Share button ⎦</span> at the bottom of Safari<br>
+      2. Tap <span>"Add to Home Screen"</span><br>
+      3. Open the app from your Home Screen<br>
+      4. Reminders will be available in Settings
+    </div>
+    <button class="ios-banner-dismiss" onclick="dismissIosBanner()">Got it</button>
   </div>
 
   <!-- DASHBOARD -->
@@ -873,12 +1199,28 @@
     </div>
   </div>
 
+  <!-- BADGES -->
+  <div id="screen-badges" class="screen">
+    <div class="badges-grid" id="badges-grid"></div>
+  </div>
+
   <!-- SETTINGS -->
   <div id="screen-settings" class="screen">
     <div class="settings-section">
       <div class="settings-label">Rename Goal</div>
       <input class="settings-input" id="rename-input" type="text" />
       <button class="btn-outline" onclick="renameGoal()">Save Name</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-label">Reminders</div>
+      <div id="notif-status" style="font-size:0.82rem;color:var(--sub);margin-bottom:0.8rem;line-height:1.5;">
+        Enable morning &amp; evening reminders so you never miss a check-in.
+      </div>
+      <button class="btn-outline" id="notif-btn" onclick="handleNotifToggle()">Enable Reminders</button>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:0.5rem;line-height:1.5;">
+        Morning (8 AM) and evening (9 PM) pushes.<br>Must allow notifications when prompted.
+      </div>
     </div>
 
     <div class="settings-section">
@@ -912,6 +1254,16 @@
   </div>
 </div>
 
+<!-- BADGE CELEBRATION -->
+<div id="badge-celebration">
+  <div class="badge-cel-glow"></div>
+  <div class="badge-cel-unlocked">Badge Unlocked</div>
+  <div class="badge-cel-icon" id="badge-cel-icon">🏆</div>
+  <div class="badge-cel-name" id="badge-cel-name">—</div>
+  <div class="badge-cel-desc" id="badge-cel-desc">—</div>
+  <button class="badge-cel-close" onclick="closeBadgeCelebration()">Let's Go! 🔥</button>
+</div>
+
 <!-- MILESTONE BANNER -->
 <div id="milestone-banner">
   <div class="milestone-emoji" id="milestone-emoji">🔥</div>
@@ -939,6 +1291,17 @@ const MILESTONE_MSGS = {
   100: { emoji: '🚀', title: '100 Days!!!',      sub: 'Absolute discipline. Legend.' },
 };
 
+const BADGES = [
+  { id: 'first_step',   streak: 1,   emoji: '👟', name: 'First Step',        desc: 'You showed up. That\'s everything.' },
+  { id: 'on_a_roll',    streak: 3,   emoji: '🌱', name: 'On A Roll',         desc: 'Three days in. The habit is taking root.' },
+  { id: 'one_week',     streak: 7,   emoji: '🔥', name: 'One Week Warrior',  desc: 'Seven days of pure discipline. Respect.' },
+  { id: 'two_weeks',    streak: 14,  emoji: '⚡', name: 'Fortnight Fighter', desc: 'Two weeks strong. No excuses, no breaks.' },
+  { id: 'habit_forged', streak: 21,  emoji: '🔨', name: 'Habit Forged',      desc: '21 days. Science says the habit is locked in.' },
+  { id: 'one_month',    streak: 30,  emoji: '🏆', name: 'Monthly Master',    desc: 'A full month. You\'re in rare company.' },
+  { id: 'diamond_mind', streak: 50,  emoji: '💎', name: 'Diamond Mind',      desc: '50 days of showing up. Unbreakable.' },
+  { id: 'century',      streak: 100, emoji: '🚀', name: 'Century Legend',    desc: '100 days. You are the 1%. Absolute legend.' },
+];
+
 const STORAGE_KEY = 'streak_app_v1';
 
 // ── DATA LAYER ──
@@ -956,6 +1319,7 @@ function createFreshState(goal) {
     goal,
     startDate: todayStr(),
     entries: {},
+    earnedBadges: {},
     reminderTime: null,
     createdAt: new Date().toISOString(),
   };
@@ -1034,8 +1398,10 @@ function showScreen(name) {
 
   if (name === 'calendar') renderCalendar();
   if (name === 'stats') renderStats();
+  if (name === 'badges') renderBadges();
   if (name === 'settings') {
     document.getElementById('rename-input').value = appData.goal;
+    initNotifUI();
   }
 }
 
@@ -1166,7 +1532,12 @@ function logDay(result) {
     const s = computeStats(appData);
     const isNewBest = s.currentStreak > 0 && s.currentStreak === s.best && s.currentStreak > 1;
     if (isNewBest) launchConfetti();
-    if (MILESTONES.includes(s.currentStreak)) showMilestoneBanner(s.currentStreak);
+    const newBadge = checkAndAwardBadge(s.currentStreak);
+    if (newBadge) {
+      showBadgeCelebration(newBadge);
+    } else if (MILESTONES.includes(s.currentStreak)) {
+      showMilestoneBanner(s.currentStreak);
+    }
   }
 }
 
@@ -1215,6 +1586,48 @@ function saveModal() {
   renderDashboard();
   if (document.getElementById('screen-calendar').classList.contains('active')) renderCalendar();
   showToast('Saved');
+}
+
+// ── BADGES ──
+function checkAndAwardBadge(streak) {
+  if (!appData.earnedBadges) appData.earnedBadges = {};
+  const badge = BADGES.find(b => b.streak === streak && !appData.earnedBadges[b.id]);
+  if (!badge) return null;
+  appData.earnedBadges[badge.id] = todayStr();
+  saveData(appData);
+  return badge;
+}
+
+function renderBadges() {
+  if (!appData.earnedBadges) appData.earnedBadges = {};
+  const grid = document.getElementById('badges-grid');
+  grid.innerHTML = '';
+  const s = computeStats(appData);
+  BADGES.forEach(badge => {
+    const earned = appData.earnedBadges[badge.id];
+    const card = document.createElement('div');
+    card.className = 'badge-card ' + (earned ? 'earned' : 'locked');
+    card.innerHTML = `
+      ${!earned ? '<span class="badge-lock-icon">🔒</span>' : ''}
+      <span class="badge-icon">${badge.emoji}</span>
+      <div class="badge-name">${badge.name}</div>
+      <div class="badge-desc">${earned ? badge.desc : badge.streak + ' day streak'}</div>
+      ${earned ? `<div class="badge-earned-date">Earned ${formatDisplayDate(earned)}</div>` : ''}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function showBadgeCelebration(badge) {
+  document.getElementById('badge-cel-icon').textContent  = badge.emoji;
+  document.getElementById('badge-cel-name').textContent  = badge.name;
+  document.getElementById('badge-cel-desc').textContent  = badge.desc;
+  document.getElementById('badge-celebration').classList.add('open');
+  launchConfetti();
+}
+
+function closeBadgeCelebration() {
+  document.getElementById('badge-celebration').classList.remove('open');
 }
 
 // ── CELEBRATIONS ──
@@ -1277,6 +1690,109 @@ function showToast(msg) {
 }
 
 // ── SETTINGS ──
+// ── NOTIFICATION BANNERS ──
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function isInStandaloneMode() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+async function initNotifBanners() {
+  // Don't show if already dismissed
+  if (localStorage.getItem('notif_banner_dismissed')) return;
+
+  if (isIOS() && !isInStandaloneMode()) {
+    // iPhone in Safari — must add to home screen first
+    document.getElementById('ios-banner').classList.add('show');
+    return;
+  }
+
+  // Android / desktop / iOS standalone — show push prompt if not subscribed
+  if (!window.OneSignal) return;
+  try {
+    await new Promise(r => setTimeout(r, 1500)); // wait for OneSignal to init
+    const subscribed = await OneSignal.User.PushSubscription.optedIn;
+    if (!subscribed) {
+      document.getElementById('notif-banner').classList.add('show');
+    }
+  } catch(e) {}
+}
+
+async function bannerEnableNotifs() {
+  document.getElementById('notif-banner').classList.remove('show');
+  try {
+    await OneSignal.Notifications.requestPermission();
+    const subscribed = await OneSignal.User.PushSubscription.optedIn;
+    if (subscribed) {
+      showToast('Reminders enabled! 🔔');
+      updateNotifUI(true);
+    } else {
+      showToast('Permission not granted — enable in browser settings');
+    }
+  } catch(e) {}
+  localStorage.setItem('notif_banner_dismissed', '1');
+}
+
+function dismissNotifBanner() {
+  document.getElementById('notif-banner').classList.remove('show');
+  localStorage.setItem('notif_banner_dismissed', '1');
+}
+
+function dismissIosBanner() {
+  document.getElementById('ios-banner').classList.remove('show');
+  localStorage.setItem('notif_banner_dismissed', '1');
+}
+
+// ── NOTIFICATIONS ──
+async function handleNotifToggle() {
+  if (!window.OneSignal) { showToast('Notifications not available'); return; }
+  try {
+    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+    if (isSubscribed) {
+      await OneSignal.User.PushSubscription.optOut();
+      updateNotifUI(false);
+      showToast('Reminders turned off');
+    } else {
+      await OneSignal.Notifications.requestPermission();
+      const nowSubscribed = await OneSignal.User.PushSubscription.optedIn;
+      updateNotifUI(nowSubscribed);
+      if (nowSubscribed) showToast('Reminders enabled! 🔔');
+      else showToast('Permission not granted');
+    }
+  } catch(e) {
+    showToast('Could not update reminders');
+  }
+}
+
+async function updateNotifUI(subscribed) {
+  const btn = document.getElementById('notif-btn');
+  const status = document.getElementById('notif-status');
+  if (!btn) return;
+  if (subscribed) {
+    btn.textContent = 'Disable Reminders';
+    btn.style.borderColor = 'var(--success)';
+    btn.style.color = 'var(--success)';
+    status.textContent = '🔔 Reminders are ON — you\'ll get a nudge at 8 AM and 9 PM.';
+    status.style.color = 'var(--success)';
+  } else {
+    btn.textContent = 'Enable Reminders';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    status.textContent = 'Enable morning & evening reminders so you never miss a check-in.';
+    status.style.color = 'var(--sub)';
+  }
+}
+
+async function initNotifUI() {
+  if (!window.OneSignal) return;
+  try {
+    const subscribed = await OneSignal.User.PushSubscription.optedIn;
+    updateNotifUI(subscribed);
+  } catch(e) {}
+}
+
 function renameGoal() {
   const v = document.getElementById('rename-input').value.trim();
   if (!v) return;
@@ -1383,6 +1899,7 @@ function bootApp() {
   document.getElementById('app').classList.remove('hidden');
   bindEvents();
   renderDashboard();
+  initNotifBanners();
 }
 
 // INIT
