@@ -1,0 +1,40 @@
+name: Daily Streak Reminders
+
+on:
+  schedule:
+    # Morning: 8:00 AM CST (14:00 UTC)
+    - cron: '0 14 * * *'
+    # Evening: 9:00 PM CST (03:00 UTC next day)
+    - cron: '0 3 * * *'
+  workflow_dispatch: # allows manual trigger from GitHub UI
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine message
+        id: msg
+        run: |
+          HOUR=$(date -u +%H)
+          if [ "$HOUR" = "14" ]; then
+            echo "title=Good morning! 🌅" >> $GITHUB_OUTPUT
+            echo "body=Start your day strong — log your streak check-in! 🔥" >> $GITHUB_OUTPUT
+          else
+            echo "title=Don't break the streak! ⚡" >> $GITHUB_OUTPUT
+            echo "body=Last chance to log today before midnight. You've got this!" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send push notification
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            --request POST \
+            --url https://onesignal.com/api/v1/notifications \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Key ${{ secrets.ONESIGNAL_REST_API_KEY }}' \
+            --data '{
+              "app_id": "aaaa6422-7202-4d6e-8010-618cb66ac95e",
+              "included_segments": ["All"],
+              "headings": {"en": "${{ steps.msg.outputs.title }}"},
+              "contents": {"en": "${{ steps.msg.outputs.body }}"},
+              "url": "https://${{ github.repository_owner }}.github.io/streak-app/"
+            }'
