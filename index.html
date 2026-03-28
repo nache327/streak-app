@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Streak" />
   <meta name="theme-color" content="#0a0a0a" />
+  <link rel="manifest" href="manifest.json" />
   <title>Streak — Daily Discipline Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -981,18 +982,20 @@
       margin-top: 0.25rem;
     }
     .reminder-time-input {
-      background: none;
-      border: none;
-      color: var(--sub);
-      font-family: 'DM Mono', monospace;
-      font-size: 0.78rem;
-      padding: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 0.55rem 0.75rem;
       cursor: pointer;
       outline: none;
-      width: 5.5rem;
-      -webkit-appearance: none;
+      width: 100%;
+      min-height: 44px;
+      margin-top: 0.4rem;
+      transition: border-color 0.2s;
     }
-    .reminder-time-input:focus { color: var(--accent); }
+    .reminder-time-input:focus { border-color: var(--accent); }
     .reminder-toggle-btn {
       background: none;
       border: 1px solid var(--border);
@@ -1274,8 +1277,9 @@
       <div class="settings-label">Reminders</div>
       <div id="reminders-list"></div>
       <button class="btn-outline" onclick="addCustomReminder()" style="margin-top:0.7rem;font-size:0.82rem;">+ Add Reminder</button>
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:0.6rem;line-height:1.5;">
-        Keep this tab open for reminders to fire. Allow notifications when prompted.
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:0.7rem;line-height:1.7;">
+        Reminders fire while this tab is open.<br>
+        <span style="color:var(--sub);font-weight:500;">iPhone users:</span> Add to Home Screen for the most reliable experience — tap the Share button ⎦ in Safari → "Add to Home Screen", then open the app from there.
       </div>
     </div>
 
@@ -1857,15 +1861,16 @@ function renderReminderSettings() {
         <button class="reminder-toggle-btn ${r.enabled ? 'on' : ''}" onclick="toggleReminder('${r.id}')">${r.enabled ? 'ON' : 'OFF'}</button>
       `;
     } else {
+      row.style.flexWrap = 'wrap';
       row.innerHTML = `
-        <div class="reminder-row-info">
-          <div class="reminder-row-label">⏰ Custom Reminder</div>
-          <div class="reminder-row-time">
-            <input class="reminder-time-input" type="time" value="${r.time}" onchange="updateReminderTime('${r.id}', this.value)" />
+        <div class="reminder-row-info" style="width:100%;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="reminder-row-label">⏰ Custom Reminder</div>
+            <button class="reminder-delete-btn" onclick="deleteReminder('${r.id}')" title="Remove">✕</button>
           </div>
+          <input class="reminder-time-input" type="time" value="${r.time}" onchange="updateReminderTime('${r.id}', this.value)" />
         </div>
-        <button class="reminder-toggle-btn ${r.enabled ? 'on' : ''}" onclick="toggleReminder('${r.id}')">${r.enabled ? 'ON' : 'OFF'}</button>
-        <button class="reminder-delete-btn" onclick="deleteReminder('${r.id}')" title="Remove">✕</button>
+        <button class="reminder-toggle-btn ${r.enabled ? 'on' : ''}" onclick="toggleReminder('${r.id}')" style="width:100%;margin-top:0.3rem;padding:0.6rem;">${r.enabled ? 'ON — Tap to disable' : 'OFF — Tap to enable'}</button>
       `;
     }
     list.appendChild(row);
@@ -1918,6 +1923,36 @@ function initNotifUI() {
 }
 
 let _reminderFiredDates = {};
+
+// Fires any reminder whose time has passed within the last 90 minutes.
+// Called on app open and whenever the tab becomes visible again,
+// so users get their nudge even if the screen was locked at the exact minute.
+function checkMissedReminders() {
+  if (!appData.reminders) return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const today = todayStr();
+  const checkedInToday = !!appData.entries[today];
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const reminderMessages = {
+    morning: `Good morning! Stay strong today — keep your ${appData.goal} streak alive. 🔥`,
+    evening: `Don't forget to log your day! Did you stick with ${appData.goal}? ✅`,
+  };
+  appData.reminders.forEach(r => {
+    if (!r.enabled) return;
+    if (checkedInToday && r.id !== 'morning') return;
+    const key = `${r.id}_${today}`;
+    if (_reminderFiredDates[key]) return;
+    const [rh, rm] = r.time.split(':').map(Number);
+    const rMins = rh * 60 + rm;
+    if (nowMins >= rMins && nowMins <= rMins + 90) {
+      _reminderFiredDates[key] = true;
+      const body = reminderMessages[r.id] || `Time to check in on your ${appData.goal} streak! ✨`;
+      new Notification('Streak Reminder', { body });
+    }
+  });
+}
+
 function checkReminder() {
   if (!appData.reminders) return;
   if (Notification.permission !== 'granted') return;
@@ -2032,6 +2067,9 @@ function bindEvents() {
     calViewDate.setMonth(calViewDate.getMonth() + 1);
     renderCalendar();
   });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') checkMissedReminders();
+  });
 }
 
 // ── BOOT + INIT ──
@@ -2051,6 +2089,7 @@ function bootApp() {
   initNotifBanners();
   if (!appData.reminders) migrateReminders();
   setInterval(checkReminder, 60000);
+  setTimeout(checkMissedReminders, 1500);
   // Silently catch up on any badges missed from before this version
   const _bootStats = computeStats(appData);
   if (_bootStats.currentStreak > 0) checkBadgesForStreak(_bootStats.currentStreak, false);
@@ -2067,6 +2106,9 @@ function bootApp() {
   document.getElementById('goal-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') startApp();
   });
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
 })();
 </script>
 </body>
