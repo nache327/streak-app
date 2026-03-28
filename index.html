@@ -11,18 +11,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@800&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet" />
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-  <script>
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: "aaaa6422-7202-4d6e-8010-618cb66ac95e",
-        allowLocalhostAsSecureOrigin: true,
-        notifyButton: { enable: false },
-      });
-      window._oneSignalReady = true;
-    });
-  </script>
   <style>
     /* ── VARIABLES & RESET ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -898,12 +886,12 @@
     }
 
     .badge-cel-glow {
-      width: 140px;
-      height: 140px;
+      width: 260px;
+      height: 260px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(232,245,90,0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(232,245,90,0.22) 0%, rgba(232,245,90,0.05) 50%, transparent 70%);
       position: absolute;
-      animation: glowPulse 1.5s ease-in-out infinite;
+      animation: glowPulse 1.2s ease-in-out infinite;
     }
 
     @keyframes glowPulse {
@@ -920,6 +908,17 @@
     @keyframes fadeSlideDown {
       from { opacity: 0; transform: translateY(-12px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .badge-cel-streak {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      opacity: 0.8;
+      animation: fadeSlideUp 0.5s 0.15s ease both;
     }
 
     .badge-cel-name {
@@ -962,6 +961,64 @@
 
     .badge-cel-close:hover { opacity: 0.85; }
     .badge-cel-close:active { transform: scale(0.97); }
+
+    /* ── REMINDER ROWS ── */
+    .reminder-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .reminder-row:last-child { border-bottom: none; }
+    .reminder-row-info { flex: 1; min-width: 0; }
+    .reminder-row-label { font-size: 0.88rem; color: var(--text); font-weight: 500; }
+    .reminder-row-sub { font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; line-height: 1.4; }
+    .reminder-row-time {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--sub);
+      margin-top: 0.25rem;
+    }
+    .reminder-time-input {
+      background: none;
+      border: none;
+      color: var(--sub);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      padding: 0;
+      cursor: pointer;
+      outline: none;
+      width: 5.5rem;
+      -webkit-appearance: none;
+    }
+    .reminder-time-input:focus { color: var(--accent); }
+    .reminder-toggle-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      padding: 0.35rem 0.9rem;
+      text-transform: uppercase;
+      transition: border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .reminder-toggle-btn.on { border-color: var(--success); color: var(--success); }
+    .reminder-delete-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 0.3rem 0.4rem;
+      transition: color 0.15s;
+      line-height: 1;
+    }
+    .reminder-delete-btn:hover { color: var(--fail); }
 
     /* ── NOTIFICATION BANNER ── */
     #notif-banner {
@@ -1166,6 +1223,7 @@
       <button class="cal-nav" id="cal-next">›</button>
     </div>
     <div class="cal-grid" id="cal-grid"></div>
+    <div style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:0.8rem;">Tap any past day to log or edit</div>
   </div>
 
   <!-- STATS -->
@@ -1214,12 +1272,10 @@
 
     <div class="settings-section">
       <div class="settings-label">Reminders</div>
-      <div id="notif-status" style="font-size:0.82rem;color:var(--sub);margin-bottom:0.8rem;line-height:1.5;">
-        Enable morning &amp; evening reminders so you never miss a check-in.
-      </div>
-      <button class="btn-outline" id="notif-btn" onclick="handleNotifToggle()">Enable Reminders</button>
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:0.5rem;line-height:1.5;">
-        Morning (8 AM) and evening (9 PM) pushes.<br>Must allow notifications when prompted.
+      <div id="reminders-list"></div>
+      <button class="btn-outline" onclick="addCustomReminder()" style="margin-top:0.7rem;font-size:0.82rem;">+ Add Reminder</button>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:0.6rem;line-height:1.5;">
+        Keep this tab open for reminders to fire. Allow notifications when prompted.
       </div>
     </div>
 
@@ -1259,6 +1315,7 @@
   <div class="badge-cel-glow"></div>
   <div class="badge-cel-unlocked">Badge Unlocked</div>
   <div class="badge-cel-icon" id="badge-cel-icon">🏆</div>
+  <div class="badge-cel-streak" id="badge-cel-streak"></div>
   <div class="badge-cel-name" id="badge-cel-name">—</div>
   <div class="badge-cel-desc" id="badge-cel-desc">—</div>
   <button class="badge-cel-close" onclick="closeBadgeCelebration()">Let's Go! 🔥</button>
@@ -1320,14 +1377,18 @@ function createFreshState(goal) {
     startDate: todayStr(),
     entries: {},
     earnedBadges: {},
-    reminderTime: null,
+    reminders: [
+      { id: 'morning', time: '08:00', enabled: false, preset: true },
+      { id: 'evening', time: '21:00', enabled: false, preset: true },
+    ],
     createdAt: new Date().toISOString(),
   };
 }
 
 // ── DATE UTILS ──
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 function parseDate(str) {
@@ -1350,7 +1411,7 @@ function dayOfWeek(str) {
 function addDays(str, n) {
   const d = parseDate(str);
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 // ── STATS ENGINE ──
@@ -1532,10 +1593,8 @@ function logDay(result) {
     const s = computeStats(appData);
     const isNewBest = s.currentStreak > 0 && s.currentStreak === s.best && s.currentStreak > 1;
     if (isNewBest) launchConfetti();
-    const newBadge = checkAndAwardBadge(s.currentStreak);
-    if (newBadge) {
-      showBadgeCelebration(newBadge);
-    } else if (MILESTONES.includes(s.currentStreak)) {
+    const newBadge = checkBadgesForStreak(s.currentStreak, true);
+    if (!newBadge && MILESTONES.includes(s.currentStreak)) {
       showMilestoneBanner(s.currentStreak);
     }
   }
@@ -1574,10 +1633,11 @@ function updateModalResultBtns() {
 
 function saveModal() {
   if (!modalResult) { showToast('Pick Yes or No first'); return; }
+  const savedResult = modalResult;
   const note = document.getElementById('modal-note').value.trim();
   const existing = appData.entries[modalDate];
   appData.entries[modalDate] = {
-    result: modalResult,
+    result: savedResult,
     note,
     loggedAt: existing ? existing.loggedAt : new Date().toISOString(),
   };
@@ -1586,16 +1646,30 @@ function saveModal() {
   renderDashboard();
   if (document.getElementById('screen-calendar').classList.contains('active')) renderCalendar();
   showToast('Saved');
+  if (savedResult === 'yes') {
+    const s = computeStats(appData);
+    if (s.currentStreak > 0) checkBadgesForStreak(s.currentStreak, true);
+  }
 }
 
 // ── BADGES ──
-function checkAndAwardBadge(streak) {
+// Awards every badge whose threshold is <= streak (catches skipped milestones too).
+// Shows celebration only for the badge whose threshold exactly matches streak.
+// Pass showCelebration=false to silently catch up on missed badges (e.g. on boot).
+function checkBadgesForStreak(streak, showCelebration) {
   if (!appData.earnedBadges) appData.earnedBadges = {};
-  const badge = BADGES.find(b => b.streak === streak && !appData.earnedBadges[b.id]);
-  if (!badge) return null;
-  appData.earnedBadges[badge.id] = todayStr();
-  saveData(appData);
-  return badge;
+  let changed = false;
+  let toShow = null;
+  for (const badge of BADGES) {
+    if (badge.streak <= streak && !appData.earnedBadges[badge.id]) {
+      appData.earnedBadges[badge.id] = todayStr();
+      changed = true;
+      if (badge.streak === streak) toShow = badge;
+    }
+  }
+  if (changed) saveData(appData);
+  if (showCelebration && toShow) showBadgeCelebration(toShow);
+  return toShow;
 }
 
 function renderBadges() {
@@ -1618,12 +1692,33 @@ function renderBadges() {
   });
 }
 
+function playBadgeSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[523,0],[659,0.18],[784,0.36],[1047,0.54],[1319,0.72]].forEach(([freq, t]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, ctx.currentTime + t);
+      gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.5);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.55);
+    });
+  } catch(e) {}
+}
+
 function showBadgeCelebration(badge) {
-  document.getElementById('badge-cel-icon').textContent  = badge.emoji;
-  document.getElementById('badge-cel-name').textContent  = badge.name;
-  document.getElementById('badge-cel-desc').textContent  = badge.desc;
+  document.getElementById('badge-cel-icon').textContent   = badge.emoji;
+  document.getElementById('badge-cel-streak').textContent = `${badge.streak}-day streak`;
+  document.getElementById('badge-cel-name').textContent   = badge.name;
+  document.getElementById('badge-cel-desc').textContent   = badge.desc;
   document.getElementById('badge-celebration').classList.add('open');
   launchConfetti();
+  playBadgeSound();
 }
 
 function closeBadgeCelebration() {
@@ -1650,15 +1745,15 @@ function launchConfetti() {
   const ctx = canvas.getContext('2d');
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  const particles = Array.from({ length: 120 }, () => ({
+  const particles = Array.from({ length: 220 }, () => ({
     x: Math.random() * canvas.width,
-    y: -10,
-    vx: (Math.random() - 0.5) * 4,
-    vy: Math.random() * 3 + 2,
-    color: ['#e8f55a','#4dff91','#ff4d4d','#fff','#ffb347'][Math.floor(Math.random()*5)],
-    size: Math.random() * 8 + 4,
+    y: Math.random() * -canvas.height * 0.5,
+    vx: (Math.random() - 0.5) * 6,
+    vy: Math.random() * 4 + 1,
+    color: ['#e8f55a','#4dff91','#ff4d4d','#fff','#ffb347','#a78bfa','#38bdf8'][Math.floor(Math.random()*7)],
+    size: Math.random() * 10 + 5,
     rot: Math.random() * 360,
-    rspeed: (Math.random() - 0.5) * 8,
+    rspeed: (Math.random() - 0.5) * 10,
   }));
   let frame = 0;
   function draw() {
@@ -1670,10 +1765,10 @@ function launchConfetti() {
       ctx.fillStyle = p.color;
       ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
       ctx.restore();
-      p.x += p.vx; p.y += p.vy; p.rot += p.rspeed; p.vy += 0.05;
+      p.x += p.vx; p.y += p.vy; p.rot += p.rspeed; p.vy += 0.06;
     });
     frame++;
-    if (frame < 150) requestAnimationFrame(draw);
+    if (frame < 280) requestAnimationFrame(draw);
     else ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
   draw();
@@ -1699,39 +1794,12 @@ function isInStandaloneMode() {
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
 
-async function initNotifBanners() {
-  // Don't show if already dismissed
-  if (localStorage.getItem('notif_banner_dismissed')) return;
-
-  if (isIOS() && !isInStandaloneMode()) {
-    // iPhone in Safari — must add to home screen first
-    document.getElementById('ios-banner').classList.add('show');
-    return;
-  }
-
-  // Android / desktop / iOS standalone — show push prompt if not subscribed
-  if (!window.OneSignal) return;
-  try {
-    await new Promise(r => setTimeout(r, 1500)); // wait for OneSignal to init
-    const subscribed = await OneSignal.User.PushSubscription.optedIn;
-    if (!subscribed) {
-      document.getElementById('notif-banner').classList.add('show');
-    }
-  } catch(e) {}
+function initNotifBanners() {
+  // Reminder setup is handled in Settings — no auto-banner needed
 }
 
-async function bannerEnableNotifs() {
+function bannerEnableNotifs() {
   document.getElementById('notif-banner').classList.remove('show');
-  try {
-    await OneSignal.Notifications.requestPermission();
-    const subscribed = await OneSignal.User.PushSubscription.optedIn;
-    if (subscribed) {
-      showToast('Reminders enabled! 🔔');
-      updateNotifUI(true);
-    } else {
-      showToast('Permission not granted — enable in browser settings');
-    }
-  } catch(e) {}
   localStorage.setItem('notif_banner_dismissed', '1');
 }
 
@@ -1746,51 +1814,132 @@ function dismissIosBanner() {
 }
 
 // ── NOTIFICATIONS ──
-async function handleNotifToggle() {
-  if (!window.OneSignal) { showToast('Notifications not available'); return; }
-  try {
-    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
-    if (isSubscribed) {
-      await OneSignal.User.PushSubscription.optOut();
-      updateNotifUI(false);
-      showToast('Reminders turned off');
+function formatReminderTime(time) {
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+function migrateReminders() {
+  // Convert old single-reminder format to new reminders array
+  const hadOld = appData.reminderEnabled && appData.reminderTime;
+  appData.reminders = [
+    { id: 'morning', time: '08:00', enabled: false, preset: true },
+    { id: 'evening', time: '21:00', enabled: false, preset: true },
+  ];
+  if (hadOld) {
+    appData.reminders.push({ id: 'custom_migrated', time: appData.reminderTime, enabled: true, preset: false });
+  }
+  saveData(appData);
+}
+
+function renderReminderSettings() {
+  if (!appData.reminders) migrateReminders();
+  const list = document.getElementById('reminders-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const presetLabels = { morning: '🌅 Morning Motivation', evening: '🌙 Evening Check-In' };
+  const presetSubs   = {
+    morning: 'Stay strong today — keep your streak alive',
+    evening: 'Log how your day went before the night is over',
+  };
+  appData.reminders.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'reminder-row';
+    if (r.preset) {
+      row.innerHTML = `
+        <div class="reminder-row-info">
+          <div class="reminder-row-label">${presetLabels[r.id]}</div>
+          <div class="reminder-row-time">${formatReminderTime(r.time)}</div>
+          <div class="reminder-row-sub">${presetSubs[r.id]}</div>
+        </div>
+        <button class="reminder-toggle-btn ${r.enabled ? 'on' : ''}" onclick="toggleReminder('${r.id}')">${r.enabled ? 'ON' : 'OFF'}</button>
+      `;
     } else {
-      await OneSignal.Notifications.requestPermission();
-      const nowSubscribed = await OneSignal.User.PushSubscription.optedIn;
-      updateNotifUI(nowSubscribed);
-      if (nowSubscribed) showToast('Reminders enabled! 🔔');
-      else showToast('Permission not granted');
+      row.innerHTML = `
+        <div class="reminder-row-info">
+          <div class="reminder-row-label">⏰ Custom Reminder</div>
+          <div class="reminder-row-time">
+            <input class="reminder-time-input" type="time" value="${r.time}" onchange="updateReminderTime('${r.id}', this.value)" />
+          </div>
+        </div>
+        <button class="reminder-toggle-btn ${r.enabled ? 'on' : ''}" onclick="toggleReminder('${r.id}')">${r.enabled ? 'ON' : 'OFF'}</button>
+        <button class="reminder-delete-btn" onclick="deleteReminder('${r.id}')" title="Remove">✕</button>
+      `;
     }
-  } catch(e) {
-    showToast('Could not update reminders');
-  }
+    list.appendChild(row);
+  });
 }
 
-async function updateNotifUI(subscribed) {
-  const btn = document.getElementById('notif-btn');
-  const status = document.getElementById('notif-status');
-  if (!btn) return;
-  if (subscribed) {
-    btn.textContent = 'Disable Reminders';
-    btn.style.borderColor = 'var(--success)';
-    btn.style.color = 'var(--success)';
-    status.textContent = '🔔 Reminders are ON — you\'ll get a nudge at 8 AM and 9 PM.';
-    status.style.color = 'var(--success)';
+async function toggleReminder(id) {
+  if (!appData.reminders) migrateReminders();
+  const r = appData.reminders.find(r => r.id === id);
+  if (!r) return;
+  if (r.enabled) {
+    r.enabled = false;
+    saveData(appData);
+    renderReminderSettings();
+    showToast('Reminder turned off');
   } else {
-    btn.textContent = 'Enable Reminders';
-    btn.style.borderColor = '';
-    btn.style.color = '';
-    status.textContent = 'Enable morning & evening reminders so you never miss a check-in.';
-    status.style.color = 'var(--sub)';
+    if (!('Notification' in window)) { showToast('Notifications not supported in this browser'); return; }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') { showToast('Permission not granted — check browser settings'); return; }
+    r.enabled = true;
+    saveData(appData);
+    renderReminderSettings();
+    showToast('Reminder set for ' + formatReminderTime(r.time));
   }
 }
 
-async function initNotifUI() {
-  if (!window.OneSignal) return;
-  try {
-    const subscribed = await OneSignal.User.PushSubscription.optedIn;
-    updateNotifUI(subscribed);
-  } catch(e) {}
+function addCustomReminder() {
+  if (!appData.reminders) migrateReminders();
+  appData.reminders.push({ id: 'custom_' + Date.now(), time: '12:00', enabled: false, preset: false });
+  saveData(appData);
+  renderReminderSettings();
+}
+
+function updateReminderTime(id, time) {
+  if (!appData.reminders) return;
+  const r = appData.reminders.find(r => r.id === id);
+  if (r) { r.time = time; saveData(appData); }
+}
+
+function deleteReminder(id) {
+  if (!appData.reminders) return;
+  appData.reminders = appData.reminders.filter(r => r.id !== id);
+  saveData(appData);
+  renderReminderSettings();
+}
+
+function initNotifUI() {
+  if (!appData.reminders) migrateReminders();
+  renderReminderSettings();
+}
+
+let _reminderFiredDates = {};
+function checkReminder() {
+  if (!appData.reminders) return;
+  if (Notification.permission !== 'granted') return;
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const today = todayStr();
+  const checkedInToday = !!appData.entries[today];
+  const reminderMessages = {
+    morning: `Good morning! Stay strong today — keep your ${appData.goal} streak alive. 🔥`,
+    evening: `Don't forget to log your day! Did you stick with ${appData.goal}? ✅`,
+  };
+  appData.reminders.forEach(r => {
+    if (!r.enabled) return;
+    if (currentTime !== r.time) return;
+    const key = `${r.id}_${today}`;
+    if (_reminderFiredDates[key]) return;
+    // Evening reminder skips if already checked in; morning always fires
+    if (checkedInToday && r.id !== 'morning') return;
+    _reminderFiredDates[key] = true;
+    const body = reminderMessages[r.id] || `Time to check in on your ${appData.goal} streak! ✨`;
+    new Notification('Streak Reminder', { body });
+  });
 }
 
 function renameGoal() {
@@ -1900,6 +2049,11 @@ function bootApp() {
   bindEvents();
   renderDashboard();
   initNotifBanners();
+  if (!appData.reminders) migrateReminders();
+  setInterval(checkReminder, 60000);
+  // Silently catch up on any badges missed from before this version
+  const _bootStats = computeStats(appData);
+  if (_bootStats.currentStreak > 0) checkBadgesForStreak(_bootStats.currentStreak, false);
 }
 
 // INIT
