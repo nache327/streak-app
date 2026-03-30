@@ -1444,8 +1444,8 @@ function computeStats(data) {
   const days = Object.keys(entries).sort();
   let wins = 0, fails = 0, currentStreak = 0, best = 0, run = 0;
 
-  // current streak: walk back from today
-  let cursor = today;
+  // current streak: walk back from today (or yesterday if today not yet logged)
+  let cursor = entries[today] ? today : addDays(today, -1);
   while (entries[cursor]) {
     if (entries[cursor].result === 'yes') { currentStreak++; cursor = addDays(cursor, -1); }
     else break;
@@ -1691,6 +1691,12 @@ function checkBadgesForStreak(streak, showCelebration) {
     }
   }
   if (changed) saveData(appData);
+  // Show celebration for the highest newly-awarded badge (not just exact match)
+  if (showCelebration && changed && !toShow) {
+    // Find the highest badge that was just awarded (streak <= current streak)
+    const newlyAwarded = BADGES.filter(b => b.streak <= streak && appData.earnedBadges[b.id] === todayStr());
+    if (newlyAwarded.length) toShow = newlyAwarded[newlyAwarded.length - 1];
+  }
   if (showCelebration && toShow) showBadgeCelebration(toShow);
   return toShow;
 }
