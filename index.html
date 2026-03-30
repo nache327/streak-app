@@ -1671,7 +1671,8 @@ function saveModal() {
   showToast('Saved');
   if (savedResult === 'yes') {
     const s = computeStats(appData);
-    if (s.currentStreak > 0) checkBadgesForStreak(s.currentStreak, true);
+    const streak = Math.max(s.currentStreak, s.best);
+    if (streak > 0) checkBadgesForStreak(streak, true);
   }
 }
 
@@ -2184,9 +2185,10 @@ function bootApp() {
   if (!appData.reminders) migrateReminders();
   setInterval(checkReminder, 60000);
   setTimeout(checkMissedReminders, 1500);
-  // Silently catch up on any badges missed from before this version
+  // Silently catch up on any badges missed — use best streak so today's "No" doesn't block awards
   const _bootStats = computeStats(appData);
-  if (_bootStats.currentStreak > 0) checkBadgesForStreak(_bootStats.currentStreak, false);
+  const _catchUp = Math.max(_bootStats.currentStreak, _bootStats.best);
+  if (_catchUp > 0) checkBadgesForStreak(_catchUp, false);
 }
 
 // INIT
