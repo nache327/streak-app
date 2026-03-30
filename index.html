@@ -20,6 +20,12 @@
         serviceWorkerPath: "OneSignalSDKWorker.js",
       });
       window._os = OneSignal;
+      // Auto-enable reminders when user subscribes to push
+      OneSignal.User.PushSubscription.addEventListener('change', e => {
+        if (e.current.optedIn && typeof autoEnablePresetReminders === 'function') {
+          autoEnablePresetReminders();
+        }
+      });
     });
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -1812,12 +1818,52 @@ function isInStandaloneMode() {
 }
 
 function initNotifBanners() {
-  // Reminder setup is handled in Settings — no auto-banner needed
+  if (localStorage.getItem('notif_banner_dismissed')) return;
+  const remindersAlreadyOn = appData.reminders && appData.reminders.some(r => r.enabled);
+  if (remindersAlreadyOn) return;
+
+  if (isIOS() && !isInStandaloneMode()) {
+    // iOS in Safari browser — prompt to install PWA first
+    document.getElementById('ios-banner').classList.add('show');
+  } else {
+    // Show enable-reminders banner
+    document.getElementById('notif-banner').classList.add('show');
+  }
 }
 
-function bannerEnableNotifs() {
+async function bannerEnableNotifs() {
   document.getElementById('notif-banner').classList.remove('show');
   localStorage.setItem('notif_banner_dismissed', '1');
+  // Auto-enable both preset reminders
+  await autoEnablePresetReminders();
+}
+
+async function autoEnablePresetReminders() {
+  if (!appData.reminders) migrateReminders();
+  let changed = false;
+  for (const r of appData.reminders) {
+    if (r.preset && !r.enabled) {
+      r.enabled = true;
+      changed = true;
+    }
+  }
+  if (changed) {
+    saveData(appData);
+    renderReminderSettings();
+    showToast('Morning & evening reminders enabled! 🔔');
+  }
+  // Subscribe via OneSignal in background
+  _waitForOneSignal().then(async os => {
+    if (!os) return;
+    try {
+      await os.Notifications.requestPermission();
+      await os.User.addTags({
+        morning_enabled: 'true',
+        evening_enabled: 'true',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+    } catch(e) {}
+  });
 }
 
 function dismissNotifBanner() {
