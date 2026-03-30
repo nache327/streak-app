@@ -1905,40 +1905,47 @@ async function toggleReminder(id) {
 
   if (r.enabled) {
     r.enabled = false;
+    saveData(appData);
+    renderReminderSettings();
     if (r.preset && window._os) {
       window._os.User.addTag(r.id + '_enabled', 'false').catch(() => {});
     }
-    saveData(appData);
-    renderReminderSettings();
     showToast('Reminder turned off');
     return;
   }
 
+  // Request notification permission first
+  if (!('Notification' in window)) {
+    showToast('Notifications not supported in this browser');
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    showToast('Please allow notifications in your browser settings');
+    return;
+  }
+
+  // Toggle on immediately so the button reflects state
+  r.enabled = true;
+  saveData(appData);
+  renderReminderSettings();
+
   if (r.preset) {
-    // Preset reminders use OneSignal push — works on locked iPhone
-    const os = await _waitForOneSignal();
-    if (!os) { showToast('Push service unavailable — try refreshing'); return; }
-    const granted = await os.Notifications.requestPermission();
-    if (!granted) { showToast('Permission not granted — check browser settings'); return; }
-    await new Promise(res => setTimeout(res, 400));
-    const subscribed = await os.User.PushSubscription.optedIn;
-    if (!subscribed) { showToast('Could not subscribe — try again'); return; }
-    await os.User.addTags({
-      [r.id + '_enabled']: 'true',
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    });
-    r.enabled = true;
-    saveData(appData);
-    renderReminderSettings();
     showToast((r.id === 'morning' ? '8 AM' : '9 PM') + ' reminder enabled! 🔔');
+    // Try OneSignal subscription in background (for server-side push on locked iPhone)
+    _waitForOneSignal().then(async os => {
+      if (!os) return;
+      try {
+        if (!os.User.PushSubscription.optedIn) {
+          await os.Notifications.requestPermission();
+        }
+        await os.User.addTags({
+          [r.id + '_enabled']: 'true',
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        });
+      } catch(e) { /* push subscription failed, in-app reminder still works */ }
+    });
   } else {
-    // Custom reminders use browser Notification API
-    if (!('Notification' in window)) { showToast('Notifications not supported in this browser'); return; }
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') { showToast('Permission not granted — check browser settings'); return; }
-    r.enabled = true;
-    saveData(appData);
-    renderReminderSettings();
     showToast('Reminder set for ' + formatReminderTime(r.time));
   }
 }
