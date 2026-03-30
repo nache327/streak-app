@@ -1914,38 +1914,37 @@ async function toggleReminder(id) {
     return;
   }
 
-  // Request notification permission first
-  if (!('Notification' in window)) {
-    showToast('Notifications not supported in this browser');
-    return;
-  }
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-    showToast('Please allow notifications in your browser settings');
-    return;
-  }
-
-  // Toggle on immediately so the button reflects state
+  // Toggle on immediately
   r.enabled = true;
   saveData(appData);
   renderReminderSettings();
 
   if (r.preset) {
-    showToast((r.id === 'morning' ? '8 AM' : '9 PM') + ' reminder enabled! 🔔');
-    // Try OneSignal subscription in background (for server-side push on locked iPhone)
+    // Try OneSignal push subscription in background (locked-screen notifications)
     _waitForOneSignal().then(async os => {
       if (!os) return;
       try {
-        if (!os.User.PushSubscription.optedIn) {
-          await os.Notifications.requestPermission();
-        }
+        await os.Notifications.requestPermission();
         await os.User.addTags({
           [r.id + '_enabled']: 'true',
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         });
-      } catch(e) { /* push subscription failed, in-app reminder still works */ }
+      } catch(e) {}
     });
+    const label = r.id === 'morning' ? '8 AM' : '9 PM';
+    // On iOS, push only works when installed to Home Screen
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isIOS && !isStandalone) {
+      showToast(label + ' reminder on! To get push on locked screen, add to Home Screen 📲');
+    } else {
+      showToast(label + ' reminder enabled! 🔔');
+    }
   } else {
+    // Custom reminders: request permission for in-app notifications
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission().catch(() => {});
+    }
     showToast('Reminder set for ' + formatReminderTime(r.time));
   }
 }
