@@ -163,22 +163,23 @@
       color: var(--sub);
     }
 
-    /* goal subtitle row */
+    /* goal hero row */
     #goal-row {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.3rem 1.4rem 0;
+      padding: 0.5rem 1.4rem 0.1rem;
     }
 
     #topbar-goal {
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--sub);
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.2rem, 4.5vw, 1.7rem);
+      font-weight: 800;
+      color: var(--text);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 70vw;
+      max-width: 78vw;
     }
 
     .goal-edit-btn {
@@ -186,7 +187,7 @@
       border: none;
       color: var(--muted);
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: 1rem;
       padding: 0;
       line-height: 1;
       transition: color 0.15s;
@@ -266,7 +267,7 @@
     /* ── DASHBOARD ── */
     .streak-display {
       text-align: center;
-      padding: 2.5rem 1rem 1.5rem;
+      padding: 1.5rem 1rem 1rem;
     }
 
     .streak-label {
@@ -275,30 +276,83 @@
       letter-spacing: 0.15em;
       text-transform: uppercase;
       color: var(--sub);
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.6rem;
+    }
+
+    /* Ring wrapper */
+    .streak-ring-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: clamp(160px, 48vw, 230px);
+      height: clamp(160px, 48vw, 230px);
+      margin: 0 auto;
+    }
+
+    .streak-ring-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+      pointer-events: none;
+    }
+
+    .streak-ring-bg {
+      fill: none;
+      stroke: var(--surface);
+      stroke-width: 7;
+    }
+
+    .streak-ring-fill {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-dasharray: 553;
+      stroke-dashoffset: 553;
+      transition: stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1);
     }
 
     .streak-number {
       font-family: 'Syne', sans-serif;
-      font-size: clamp(5rem, 22vw, 9rem);
+      font-size: clamp(3rem, 13vw, 5.5rem);
       line-height: 0.9;
       color: var(--accent);
+      position: relative;
+      z-index: 1;
     }
 
     .streak-unit {
       font-family: 'Syne', sans-serif;
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: var(--sub);
-      margin-top: 0.3rem;
+      margin-top: 0.4rem;
+    }
+
+    .streak-milestone-label {
+      font-size: 0.65rem;
+      color: var(--sub);
+      letter-spacing: 0.08em;
+      margin-top: 0.2rem;
+      min-height: 1em;
     }
 
     .streak-target {
-      margin-top: 0.6rem;
+      margin-top: 0.5rem;
       font-size: 0.82rem;
       color: var(--sub);
     }
 
     .streak-target span { color: var(--text); font-weight: 500; }
+
+    /* Check-in flash on yes */
+    @keyframes yesFlash {
+      0%   { background-color: rgba(77,255,145,0.2); }
+      100% { background-color: transparent; }
+    }
+    .yes-flash { animation: yesFlash 0.9s ease-out forwards; border-radius: 14px; }
 
     /* mini stats row */
     .mini-stats {
@@ -475,6 +529,7 @@
     .cal-cell.empty { background: none; border-color: transparent; cursor: default; }
     .cal-cell.yes { background: var(--success); border-color: var(--success); color: #0a0a0a; font-weight: 700; }
     .cal-cell.no  { background: var(--fail);    border-color: var(--fail);    color: #fff;    font-weight: 700; }
+    .cal-cell.unlogged { border-style: dashed; border-color: var(--muted); color: var(--muted); }
     .cal-cell.today { border-color: var(--accent); border-width: 2px; }
     .cal-cell.future { opacity: 0.2; cursor: default; }
 
@@ -826,8 +881,8 @@
     }
 
     .badge-card.locked {
-      opacity: 0.38;
-      filter: grayscale(1);
+      opacity: 0.5;
+      filter: grayscale(0.7);
     }
 
     .badge-icon {
@@ -1135,6 +1190,20 @@
       padding: 0;
     }
 
+    /* ── STATS EMPTY STATE ── */
+    .stats-empty {
+      text-align: center;
+      padding: 2.5rem 1rem 1rem;
+    }
+    .stats-empty-icon { font-size: 2.8rem; display: block; margin-bottom: 0.7rem; }
+    .stats-empty-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .stats-empty-sub { font-size: 0.85rem; color: var(--sub); line-height: 1.7; }
+
     /* ── UTILITY ── */
     .hidden { display: none !important; }
     .text-center { text-align: center; }
@@ -1157,7 +1226,6 @@
 <div id="app" class="hidden">
   <!-- Top bar -->
   <div id="topbar">
-    <div class="topbar-wordmark">STREAK</div>
     <div class="topbar-date" id="topbar-date">—</div>
   </div>
   <div id="goal-row">
@@ -1202,8 +1270,15 @@
   <div id="screen-dashboard" class="screen active">
     <div class="streak-display">
       <div class="streak-label">Current Streak</div>
-      <div class="streak-number" id="dash-streak">0</div>
+      <div class="streak-ring-wrap">
+        <svg class="streak-ring-svg" viewBox="0 0 200 200" aria-hidden="true">
+          <circle class="streak-ring-bg" cx="100" cy="100" r="88"/>
+          <circle class="streak-ring-fill" id="streak-ring-fill" cx="100" cy="100" r="88"/>
+        </svg>
+        <div class="streak-number" id="dash-streak">0</div>
+      </div>
       <div class="streak-unit">days</div>
+      <div class="streak-milestone-label" id="streak-milestone-label"></div>
       <div class="streak-target" id="dash-target"></div>
     </div>
 
@@ -1250,31 +1325,39 @@
 
   <!-- STATS -->
   <div id="screen-stats" class="screen">
-    <div class="chart-wrap">
-      <div class="chart-title">30-Day Trend</div>
-      <div class="chart-bars" id="chart-bars"></div>
+    <div id="stats-empty-state" style="display:none;">
+      <div class="stats-empty">
+        <span class="stats-empty-icon">🔥</span>
+        <div class="stats-empty-title">You're just getting started!</div>
+        <div class="stats-empty-sub">Log your first day to see your stats.<br>Every streak begins with a single day.</div>
+      </div>
     </div>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-card-val accent" id="stat-streak">0</div>
-        <div class="stat-card-lbl">Current Streak</div>
+    <div id="stats-content">
+      <div class="chart-wrap">
+        <div class="chart-title">30-Day Trend</div>
+        <div class="chart-bars" id="chart-bars"></div>
       </div>
-      <div class="stat-card">
-        <div class="stat-card-val" id="stat-best">0</div>
-        <div class="stat-card-lbl">Personal Best</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-val success" id="stat-wins">0</div>
-        <div class="stat-card-lbl">Total Wins</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-val fail" id="stat-fails">0</div>
-        <div class="stat-card-lbl">Total Fails</div>
-      </div>
-      <div class="stat-card full">
-        <div class="stat-card-val accent" id="stat-rate">—</div>
-        <div class="stat-card-lbl">Success Rate</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-val accent" id="stat-streak">0</div>
+          <div class="stat-card-lbl">Current Streak</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val" id="stat-best">0</div>
+          <div class="stat-card-lbl">Personal Best</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val success" id="stat-wins">0</div>
+          <div class="stat-card-lbl">Total Wins</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val fail" id="stat-fails">0</div>
+          <div class="stat-card-lbl">Total Fails</div>
+        </div>
+        <div class="stat-card full">
+          <div class="stat-card-val accent" id="stat-rate">—</div>
+          <div class="stat-card-lbl">Success Rate</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1304,6 +1387,7 @@
 
     <div class="settings-section">
       <div class="settings-label">Data</div>
+      <div style="font-size:0.78rem;color:var(--sub);margin-bottom:0.8rem;line-height:1.6;">Back up your streak data or restore it on a new device.</div>
       <button class="btn-outline" onclick="exportData()">Export JSON Backup</button>
       <button class="btn-outline" onclick="document.getElementById('import-file').click()">Import JSON Backup</button>
       <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)" />
@@ -1509,6 +1593,25 @@ function renderDashboard() {
     document.getElementById('dash-target').innerHTML = `<span>${toGo}</span> day${toGo !== 1 ? 's' : ''} to beat your best`;
   }
 
+  // Streak progress ring
+  const ringMilestones = [1, 3, 7, 14, 21, 30, 50, 100];
+  const nextM = ringMilestones.find(m => m > s.currentStreak) || (s.currentStreak + 1);
+  const prevM = [...ringMilestones].reverse().find(m => m < s.currentStreak) || 0;
+  const ringPct = s.currentStreak === 0 ? 0 : Math.min(1, (s.currentStreak - prevM) / (nextM - prevM));
+  const circumference = 553;
+  const ringFill = document.getElementById('streak-ring-fill');
+  if (ringFill) ringFill.style.strokeDashoffset = circumference * (1 - ringPct);
+  const milestoneLabel = document.getElementById('streak-milestone-label');
+  if (milestoneLabel) {
+    if (s.currentStreak === 0) {
+      milestoneLabel.textContent = '';
+    } else if (s.currentStreak >= 100) {
+      milestoneLabel.textContent = '100+ days — legend 🚀';
+    } else {
+      milestoneLabel.textContent = `${nextM - s.currentStreak} day${nextM - s.currentStreak !== 1 ? 's' : ''} to ${nextM}-day milestone`;
+    }
+  }
+
   // 7-day strip
   const strip = document.getElementById('week-strip');
   strip.innerHTML = '';
@@ -1569,6 +1672,7 @@ function renderCalendar() {
     let cls = 'cal-cell';
     if (str > today) cls += ' future';
     else if (e) cls += ' ' + e.result;
+    else cls += ' unlogged';
     if (str === today) cls += ' today';
     el.className = cls;
     el.textContent = d;
@@ -1579,6 +1683,10 @@ function renderCalendar() {
 
 function renderStats() {
   const s = computeStats(appData);
+  const isEmpty = s.wins === 0 && s.fails === 0;
+  document.getElementById('stats-empty-state').style.display = isEmpty ? 'block' : 'none';
+  document.getElementById('stats-content').style.display = isEmpty ? 'none' : 'block';
+  if (isEmpty) return;
   document.getElementById('stat-streak').textContent = s.currentStreak;
   document.getElementById('stat-best').textContent = s.best;
   document.getElementById('stat-wins').textContent = s.wins;
@@ -1603,6 +1711,7 @@ function renderStats() {
 function logDay(result) {
   const today = todayStr();
   if (appData.entries[today]) return;
+  const isFirstEver = Object.keys(appData.entries).length === 0;
   appData.entries[today] = {
     result,
     note: '',
@@ -1613,6 +1722,12 @@ function logDay(result) {
   showToast(result === 'yes' ? '✓ Logged — great work!' : 'Logged. Tomorrow is a new day.');
 
   if (result === 'yes') {
+    // Flash celebration
+    const screen = document.getElementById('screen-dashboard');
+    screen.classList.remove('yes-flash');
+    void screen.offsetWidth; // reflow to restart animation
+    screen.classList.add('yes-flash');
+
     const s = computeStats(appData);
     const isNewBest = s.currentStreak > 0 && s.currentStreak === s.best && s.currentStreak > 1;
     if (isNewBest) launchConfetti();
@@ -1620,6 +1735,11 @@ function logDay(result) {
     if (!newBadge && MILESTONES.includes(s.currentStreak)) {
       showMilestoneBanner(s.currentStreak);
     }
+  }
+
+  // Show reminder banner after the first logged day
+  if (isFirstEver) {
+    setTimeout(() => initNotifBanners(), 1800);
   }
 }
 
@@ -1715,7 +1835,7 @@ function renderBadges() {
       ${!earned ? '<span class="badge-lock-icon">🔒</span>' : ''}
       <span class="badge-icon">${badge.emoji}</span>
       <div class="badge-name">${badge.name}</div>
-      <div class="badge-desc">${earned ? badge.desc : badge.streak + ' day streak'}</div>
+      <div class="badge-desc">${earned ? badge.desc : 'Reach a ' + badge.streak + '-day streak'}</div>
       ${earned ? `<div class="badge-earned-date">Earned ${formatDisplayDate(earned)}</div>` : ''}
     `;
     grid.appendChild(card);
@@ -1828,12 +1948,12 @@ function initNotifBanners() {
   if (localStorage.getItem('notif_banner_dismissed')) return;
   const remindersAlreadyOn = appData.reminders && appData.reminders.some(r => r.enabled);
   if (remindersAlreadyOn) return;
+  // Don't show until user has logged at least one day
+  if (Object.keys(appData.entries).length === 0) return;
 
   if (isIOS() && !isInStandaloneMode()) {
-    // iOS in Safari browser — prompt to install PWA first
     document.getElementById('ios-banner').classList.add('show');
   } else {
-    // Show enable-reminders banner
     document.getElementById('notif-banner').classList.add('show');
   }
 }
