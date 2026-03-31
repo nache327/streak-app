@@ -13,14 +13,18 @@
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: "aaaa6422-7202-4d6e-8010-618cb66ac95e",
-        allowLocalhostAsSecureOrigin: true,
-        notifyButton: { enable: false },
-        serviceWorkerPath: "/streak-app/sw.js",
-        serviceWorkerParam: { scope: "/streak-app/" },
-      });
-      window._os = OneSignal;
+      try {
+        await OneSignal.init({
+          appId: "aaaa6422-7202-4d6e-8010-618cb66ac95e",
+          allowLocalhostAsSecureOrigin: true,
+          notifyButton: { enable: false },
+          serviceWorkerPath: "/streak-app/sw.js",
+        });
+        window._os = OneSignal;
+      } catch(err) {
+        console.error('OneSignal init failed:', err);
+        window._osErr = err.message || String(err);
+      }
       // If notification permission is already granted, opt in immediately
       // (covers the case where user previously allowed iOS notifications but
       //  OneSignal never completed its subscription registration)
@@ -2439,7 +2443,8 @@ async function updatePushStatus() {
   const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
   const os = await _waitForOneSignal();
   if (!os) {
-    el.textContent = `iOS perm: ${perm} | OneSignal: SDK not loaded`;
+    const errMsg = window._osErr ? ` | Error: ${window._osErr}` : '';
+    el.textContent = `iOS perm: ${perm} | OneSignal: SDK not loaded${errMsg}`;
     el.style.color = 'var(--fail)';
     return;
   }
