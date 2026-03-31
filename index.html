@@ -1459,8 +1459,9 @@
 
     <div class="checkin-done" id="checkin-done">
       <div class="done-result" id="done-result-label">—</div>
+      <div id="done-confirm-text" style="margin-bottom:0.4rem;"></div>
       <div id="done-note-display"></div>
-      <button class="btn-outline" style="margin-top:0.8rem;width:auto;padding:0.5rem 1.2rem;" onclick="openModal(todayStr())">Edit today</button>
+      <button style="background:none;border:none;color:var(--sub);font-size:0.78rem;cursor:pointer;margin-top:0.7rem;text-decoration:underline;padding:0;" onclick="editTodayInline()">Tap to edit today's log</button>
     </div>
   </div>
 
@@ -1471,7 +1472,7 @@
       <div class="cal-title" id="cal-title">—</div>
       <button class="cal-nav" id="cal-next">›</button>
     </div>
-    <div style="font-size:0.82rem;color:var(--muted);text-align:center;margin-bottom:0.7rem;">✎ Tap any past day to log or edit</div>
+    <div style="font-size:0.85rem;color:var(--sub);text-align:center;margin-bottom:0.9rem;">✎ Tap any past day to log or edit</div>
     <div class="cal-grid" id="cal-grid"></div>
   </div>
 
@@ -1769,13 +1770,13 @@ function getModeLabels() {
 function getMotivationLine(s) {
   const hasHistory = s.wins + s.fails > 0;
   if (s.currentStreak === 0 && !hasHistory) return 'Every streak starts with Day 1. Let\'s go.';
-  if (s.currentStreak === 0) return 'Streak reset. Bounce back today.';
+  if (s.currentStreak === 0) return 'Streak reset. Today is your comeback.';
   if (s.currentStreak === 1) return 'Day 1 done. Don\'t stop now.';
-  if (s.currentStreak === 7) return 'One week! You\'re building something real.';
-  if (s.currentStreak === 14) return 'Two weeks straight. This is becoming who you are.';
-  if (s.currentStreak === 30) return `${s.currentStreak} days. This is who you are now.`;
+  if (s.currentStreak === 7) return 'One week! You\'re building something real. 🔥';
+  if (s.currentStreak === 14) return 'Two weeks straight. You\'re locked in. 💪';
+  if (s.currentStreak === 21) return '21 days. Habit territory. Keep going.';
   if (s.currentStreak >= 30) return `${s.currentStreak} days. This is who you are now.`;
-  return `${s.currentStreak} days strong. Keep the momentum.`;
+  return `${s.currentStreak} days strong — keep the chain alive!`;
 }
 
 function getNextMilestone(s) {
@@ -1918,8 +1919,9 @@ function renderDashboard() {
     document.getElementById('checkin-area').style.display = 'none';
     document.getElementById('checkin-done').style.display = 'block';
     const lbl = document.getElementById('done-result-label');
-    lbl.textContent = todayEntry.result === 'yes' ? labels.doneYes : labels.doneNo;
-    lbl.className = 'done-result ' + todayEntry.result;
+    lbl.textContent = todayEntry.result === 'yes' ? '✅' : '💪';
+    lbl.className = 'done-result';
+    document.getElementById('done-confirm-text').textContent = todayEntry.result === 'yes' ? 'Logged! See you tomorrow.' : 'Logged. Tomorrow is a fresh start.';
     document.getElementById('done-note-display').textContent = todayEntry.note || '';
   } else {
     if (qEl) { qEl.style.display = 'block'; qEl.textContent = labels.question; }
@@ -2032,6 +2034,13 @@ function logDay(result) {
   if (isFirstEver) {
     setTimeout(() => initNotifBanners(), 1800);
   }
+}
+
+function editTodayInline() {
+  const today = todayStr();
+  delete appData.entries[today];
+  saveData(appData);
+  renderDashboard();
 }
 
 // ── MODAL ──
@@ -2605,10 +2614,10 @@ function importData(event) {
 
 function resetApp() {
   showConfirm(
-    'Reset All Data',
-    'This will permanently delete all your streak data, badges, and settings. This cannot be undone.',
+    'Delete everything?',
+    'This will permanently erase your streak, history, badges, and all settings. This cannot be undone.',
     () => { localStorage.removeItem(STORAGE_KEY); location.reload(); },
-    'Reset Everything'
+    'Yes, Reset'
   );
 }
 
