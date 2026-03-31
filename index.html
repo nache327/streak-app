@@ -2024,7 +2024,6 @@ function logDay(result) {
 
     const s = computeStats(appData);
     // Mark the start of a new streak run so badge repeat counts increment once per run
-    if (s.currentStreak === 1) appData.currentRunStartDate = todayStr();
     const isNewBest = s.currentStreak > 0 && s.currentStreak === s.best && s.currentStreak > 1;
     if (isNewBest) launchConfetti();
     const newBadge = checkBadgesForStreak(s.currentStreak, true);
@@ -2098,6 +2097,21 @@ function saveModal() {
 }
 
 // ── BADGES ──
+// Derives the start date of the current consecutive 'yes' run from entries.
+// Used as the run ID so badge counts work correctly whether entries are added
+// via logDay or via the calendar modal (saveModal).
+function getCurrentRunStartDate() {
+  const today = todayStr();
+  const entries = appData.entries;
+  let cursor = (entries[today] && entries[today].result === 'yes') ? today : addDays(today, -1);
+  if (!entries[cursor] || entries[cursor].result !== 'yes') return null;
+  while (true) {
+    const prev = addDays(cursor, -1);
+    if (entries[prev] && entries[prev].result === 'yes') { cursor = prev; } else { break; }
+  }
+  return cursor;
+}
+
 // Awards every badge whose threshold is <= streak (catches skipped milestones too).
 // Tracks earn counts per badge across separate streak runs (badgeCounts).
 // Once a badge is earned 2+ times, renderBadges shows a "2x" / "3x" pill.
@@ -2106,7 +2120,10 @@ function checkBadgesForStreak(streak, showCelebration) {
   if (!appData.earnedBadges) appData.earnedBadges = {};
   if (!appData.badgeCounts) appData.badgeCounts = {};
   if (!appData.badgeCountedRun) appData.badgeCountedRun = {};
-  const runId = appData.currentRunStartDate || '__no_run__';
+  // Derive run ID fresh from entries so modal edits are handled correctly
+  const derivedRunId = getCurrentRunStartDate() || '__no_run__';
+  if (derivedRunId !== '__no_run__') appData.currentRunStartDate = derivedRunId;
+  const runId = derivedRunId;
   let changed = false;
   const newlyAwarded = [];
 
