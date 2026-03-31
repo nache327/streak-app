@@ -40,7 +40,7 @@ async function sendDailyReminders(env) {
       filters: [{ field: 'tag', key: 'evening_enabled', relation: '=', value: 'true' }],
       headings: { en: 'Streak Check-In ✅' },
       contents: { en: "Don't forget to log your day! Keep the streak alive." },
-      delivery_time_of_day: '9:00PM',
+      delivery_time_of_day: '8:00PM',
     }),
   ]);
 }
