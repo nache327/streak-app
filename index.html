@@ -2643,17 +2643,20 @@ function startApp() {
 }
 
 // Migrate existing users who earned badges before badgeCounts was introduced.
-// Sets count=1 for each already-earned badge and marks them as counted in a
-// synthetic run ID so the boot catch-up call never double-increments them.
+// Sets count=1 for each already-earned badge and marks them as counted in the
+// actual current run so the boot catch-up call never double-increments them.
+// v2 fixes a prior migration that used a synthetic run ID ('__initial_migration__')
+// which caused spurious 2x counts on the very first checkBadgesForStreak call.
 function migrateBadgeCounts() {
-  if (appData.badgeCounts !== undefined) return; // already migrated
+  if (appData.badgeCountsVersion === 2) return; // already on current version
+  const currentRunId = getCurrentRunStartDate() || '__no_run__';
   appData.badgeCounts = {};
   appData.badgeCountedRun = {};
-  const migrationRunId = '__initial_migration__';
-  appData.currentRunStartDate = migrationRunId;
+  appData.currentRunStartDate = currentRunId;
+  appData.badgeCountsVersion = 2;
   for (const id of Object.keys(appData.earnedBadges || {})) {
     appData.badgeCounts[id] = 1;
-    appData.badgeCountedRun[id] = migrationRunId;
+    appData.badgeCountedRun[id] = currentRunId;
   }
   saveData(appData);
 }
