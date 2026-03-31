@@ -2442,29 +2442,43 @@ async function updatePushStatus() {
   const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
   const os = await _waitForOneSignal();
   if (!os) {
-    const errMsg = window._osErr ? ` | Error: ${window._osErr}` : '';
-    el.textContent = `iOS perm: ${perm} | OneSignal: SDK not loaded${errMsg}`;
-    el.style.color = 'var(--fail)';
+    const errMsg = window._osErr ? ` Error: ${window._osErr}` : '';
+    el.innerHTML = `perm: <b>${perm}</b> | SDK: <b style="color:var(--fail)">not loaded</b>${errMsg}`;
     return;
   }
   const opted = os.User.PushSubscription.optedIn;
-  const id = os.User.PushSubscription.id || 'none';
-  el.innerHTML = `iOS perm: <b>${perm}</b> | Subscribed: <b>${opted ? 'YES ✓' : 'NO ✗'}</b><br>ID: ${id.slice(0,16) || 'none'}`;
-  el.style.color = opted ? 'var(--success)' : 'var(--fail)';
+  const id    = os.User.PushSubscription.id    || 'none';
+  const token = os.User.PushSubscription.token || 'none';
+  const swState = navigator.serviceWorker.controller ? navigator.serviceWorker.controller.state : 'no SW';
+  el.innerHTML =
+    `perm: <b>${perm}</b> | opted: <b>${opted}</b><br>` +
+    `id: ${id}<br>` +
+    `token: ${token === 'none' ? '<b style="color:var(--fail)">none</b>' : token.slice(0,20)+'…'}<br>` +
+    `sw: ${swState}`;
+  el.style.color = (id !== 'none') ? 'var(--success)' : 'var(--sub)';
 }
 
 async function resubscribePush() {
   const el = document.getElementById('push-status-text');
-  if (el) { el.textContent = 'Trying to subscribe…'; el.style.color = 'var(--sub)'; }
+  if (el) { el.textContent = 'Trying…'; el.style.color = 'var(--sub)'; }
   const os = await _waitForOneSignal();
-  if (!os) { showToast('OneSignal SDK not loaded'); return; }
+  if (!os) { showToast('SDK not loaded'); return; }
   try {
     await os.User.PushSubscription.optIn();
-    await os.User.addTags({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
-    showToast('Push subscription attempt complete');
+    await new Promise(r => setTimeout(r, 3000)); // wait for APNs token
   } catch(e) {
-    showToast('Error: ' + (e.message || e));
+    if (el) el.textContent = 'optIn error: ' + (e.message || String(e));
+    return;
   }
+  // Check raw pushManager subscription too
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (el) {
+      const extra = sub ? 'pushManager: HAS subscription' : 'pushManager: NO subscription';
+      el.innerHTML += '<br>' + extra;
+    }
+  } catch(e2) {}
   updatePushStatus();
 }
 
