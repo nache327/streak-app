@@ -935,6 +935,20 @@
       color: var(--muted);
     }
 
+    .badge-multiplier {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.6rem;
+      background: var(--accent);
+      color: #111;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 999px;
+      line-height: 1.4;
+      letter-spacing: 0.02em;
+    }
+
     /* ── BADGE CELEBRATION ── */
     #badge-celebration {
       display: none;
@@ -1644,6 +1658,8 @@ function createFreshState(goal, mode) {
     startDate: todayStr(),
     entries: {},
     earnedBadges: {},
+    badgeCounts: {},
+    badgeCountedRun: {},
     reminders: [
       { id: 'morning', time: '08:00', enabled: false, preset: true },
       { id: 'evening', time: '20:00', enabled: false, preset: true },
@@ -2003,6 +2019,8 @@ function logDay(result) {
     screen.classList.add('yes-flash');
 
     const s = computeStats(appData);
+    // Mark the start of a new streak run so badge repeat counts increment once per run
+    if (s.currentStreak === 1) appData.currentRunStartDate = todayStr();
     const isNewBest = s.currentStreak > 0 && s.currentStreak === s.best && s.currentStreak > 1;
     if (isNewBest) launchConfetti();
     const newBadge = checkBadgesForStreak(s.currentStreak, true);
@@ -2077,41 +2095,64 @@ function saveModal() {
 
 // ── BADGES ──
 // Awards every badge whose threshold is <= streak (catches skipped milestones too).
-// Shows celebration only for the badge whose threshold exactly matches streak.
+// Tracks earn counts per badge across separate streak runs (badgeCounts).
+// Once a badge is earned 2+ times, renderBadges shows a "2x" / "3x" pill.
 // Pass showCelebration=false to silently catch up on missed badges (e.g. on boot).
 function checkBadgesForStreak(streak, showCelebration) {
   if (!appData.earnedBadges) appData.earnedBadges = {};
+  if (!appData.badgeCounts) appData.badgeCounts = {};
+  if (!appData.badgeCountedRun) appData.badgeCountedRun = {};
+  const runId = appData.currentRunStartDate || '__no_run__';
   let changed = false;
-  let toShow = null;
+  const newlyAwarded = [];
+
   for (const badge of BADGES) {
-    if (badge.streak <= streak && !appData.earnedBadges[badge.id]) {
+    if (badge.streak > streak) continue;
+    const alreadyEarned = !!appData.earnedBadges[badge.id];
+    const countedThisRun = appData.badgeCountedRun[badge.id] === runId;
+
+    if (!alreadyEarned) {
+      // First-ever earn
       appData.earnedBadges[badge.id] = todayStr();
+      appData.badgeCounts[badge.id] = 1;
+      appData.badgeCountedRun[badge.id] = runId;
       changed = true;
-      if (badge.streak === streak) toShow = badge;
+      newlyAwarded.push(badge);
+    } else if (!countedThisRun) {
+      // Re-earned in a new streak run — increment lifetime count
+      appData.badgeCounts[badge.id] = (appData.badgeCounts[badge.id] || 1) + 1;
+      appData.badgeCountedRun[badge.id] = runId;
+      changed = true;
+      newlyAwarded.push(badge);
     }
   }
+
   if (changed) saveData(appData);
-  // Show celebration for the highest newly-awarded badge (not just exact match)
-  if (showCelebration && changed && !toShow) {
-    // Find the highest badge that was just awarded (streak <= current streak)
-    const newlyAwarded = BADGES.filter(b => b.streak <= streak && appData.earnedBadges[b.id] === todayStr());
-    if (newlyAwarded.length) toShow = newlyAwarded[newlyAwarded.length - 1];
+
+  if (showCelebration && newlyAwarded.length) {
+    // Prefer the badge whose threshold exactly matches the streak; otherwise show highest
+    const exact = newlyAwarded.find(b => b.streak === streak);
+    const toShow = exact || newlyAwarded[newlyAwarded.length - 1];
+    showBadgeCelebration(toShow);
+    return toShow;
   }
-  if (showCelebration && toShow) showBadgeCelebration(toShow);
-  return toShow;
+  return null;
 }
 
 function renderBadges() {
   if (!appData.earnedBadges) appData.earnedBadges = {};
+  if (!appData.badgeCounts) appData.badgeCounts = {};
   const grid = document.getElementById('badges-grid');
   grid.innerHTML = '';
   const s = computeStats(appData);
   BADGES.forEach(badge => {
     const earned = appData.earnedBadges[badge.id];
+    const count = appData.badgeCounts[badge.id] || 0;
     const card = document.createElement('div');
     card.className = 'badge-card ' + (earned ? 'earned' : 'locked');
     card.innerHTML = `
       ${!earned ? '<span class="badge-lock-icon">🔒</span>' : ''}
+      ${earned && count >= 2 ? `<span class="badge-multiplier">${count}x</span>` : ''}
       <span class="badge-icon">${badge.emoji}</span>
       <div class="badge-name">${badge.name}</div>
       <div class="badge-desc">${earned ? badge.desc : 'Reach a ' + badge.streak + '-day streak'}</div>
@@ -2584,6 +2625,22 @@ function startApp() {
   bootApp();
 }
 
+// Migrate existing users who earned badges before badgeCounts was introduced.
+// Sets count=1 for each already-earned badge and marks them as counted in a
+// synthetic run ID so the boot catch-up call never double-increments them.
+function migrateBadgeCounts() {
+  if (appData.badgeCounts !== undefined) return; // already migrated
+  appData.badgeCounts = {};
+  appData.badgeCountedRun = {};
+  const migrationRunId = '__initial_migration__';
+  appData.currentRunStartDate = migrationRunId;
+  for (const id of Object.keys(appData.earnedBadges || {})) {
+    appData.badgeCounts[id] = 1;
+    appData.badgeCountedRun[id] = migrationRunId;
+  }
+  saveData(appData);
+}
+
 function bootApp() {
   if (!appData.goalMode) appData.goalMode = 'do';
   document.getElementById('screen-onboard').style.display = 'none';
@@ -2592,6 +2649,7 @@ function bootApp() {
   renderDashboard();
   initNotifBanners();
   if (!appData.reminders) migrateReminders();
+  migrateBadgeCounts();
   setInterval(checkReminder, 60000);
   setTimeout(checkMissedReminders, 1500);
   // Silently catch up on any badges missed — use best streak so today's "No" doesn't block awards
