@@ -1526,11 +1526,6 @@
       <div class="settings-label">Reminders</div>
       <div id="reminders-list"></div>
       <button class="btn-outline" onclick="addCustomReminder()" style="margin-top:0.7rem;font-size:0.82rem;">+ Add Reminder</button>
-      <div id="push-status-row" style="margin-top:0.9rem;padding:0.7rem 0.8rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.75rem;line-height:1.6;">
-        <div style="color:var(--sub);margin-bottom:0.3rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;">Push Status</div>
-        <div id="push-status-text" style="color:var(--muted);">Checking…</div>
-        <button onclick="resubscribePush()" style="margin-top:0.5rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--sub);cursor:pointer;font-size:0.72rem;padding:0.3rem 0.7rem;">Re-subscribe</button>
-      </div>
       <div style="font-size:0.72rem;color:var(--muted);margin-top:0.7rem;line-height:1.7;">
         Reminders fire while this tab is open.<br>
         <span style="color:var(--sub);font-weight:500;">iPhone users:</span> Add to Home Screen for the most reliable experience — tap the Share button ⎦ in Safari → "Add to Home Screen", then open the app from there.
@@ -2434,54 +2429,8 @@ function deleteReminder(id) {
 function initNotifUI() {
   if (!appData.reminders) migrateReminders();
   renderReminderSettings();
-  updatePushStatus();
 }
 
-async function updatePushStatus() {
-  const el = document.getElementById('push-status-text');
-  if (!el) return;
-  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
-  const os = await _waitForOneSignal();
-  if (!os) {
-    const errMsg = window._osErr ? ` Error: ${window._osErr}` : '';
-    el.innerHTML = `perm: <b>${perm}</b> | SDK: <b style="color:var(--fail)">not loaded</b>${errMsg}`;
-    return;
-  }
-  const opted = os.User.PushSubscription.optedIn;
-  const id    = os.User.PushSubscription.id    || 'none';
-  const token = os.User.PushSubscription.token || 'none';
-  const swState = navigator.serviceWorker.controller ? navigator.serviceWorker.controller.state : 'no SW';
-  el.innerHTML =
-    `perm: <b>${perm}</b> | opted: <b>${opted}</b><br>` +
-    `id: ${id}<br>` +
-    `token: ${token === 'none' ? '<b style="color:var(--fail)">none</b>' : token.slice(0,20)+'…'}<br>` +
-    `sw: ${swState}`;
-  el.style.color = (id !== 'none') ? 'var(--success)' : 'var(--sub)';
-}
-
-async function resubscribePush() {
-  const el = document.getElementById('push-status-text');
-  if (el) { el.textContent = 'Trying…'; el.style.color = 'var(--sub)'; }
-  const os = await _waitForOneSignal();
-  if (!os) { showToast('SDK not loaded'); return; }
-  try {
-    await os.User.PushSubscription.optIn();
-    await new Promise(r => setTimeout(r, 3000)); // wait for APNs token
-  } catch(e) {
-    if (el) el.textContent = 'optIn error: ' + (e.message || String(e));
-    return;
-  }
-  // Check raw pushManager subscription too
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription();
-    if (el) {
-      const extra = sub ? 'pushManager: HAS subscription' : 'pushManager: NO subscription';
-      el.innerHTML += '<br>' + extra;
-    }
-  } catch(e2) {}
-  updatePushStatus();
-}
 
 let _reminderFiredDates = {};
 
