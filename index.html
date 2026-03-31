@@ -2144,7 +2144,7 @@ function checkBadgesForStreak(streak, showCelebration) {
       appData.badgeCountedRun[badge.id] = runId;
       changed = true;
       newlyAwarded.push(badge);
-    } else if (!countedThisRun) {
+    } else if (!countedThisRun && runId !== '__no_run__') {
       // Re-earned in a new streak run — increment lifetime count
       appData.badgeCounts[badge.id] = (appData.badgeCounts[badge.id] || 1) + 1;
       appData.badgeCountedRun[badge.id] = runId;
@@ -2657,12 +2657,12 @@ function startApp() {
 // v2 fixes a prior migration that used a synthetic run ID ('__initial_migration__')
 // which caused spurious 2x counts on the very first checkBadgesForStreak call.
 function migrateBadgeCounts() {
-  if (appData.badgeCountsVersion === 2) return; // already on current version
+  if (appData.badgeCountsVersion === 3) return; // already on current version
   const currentRunId = getCurrentRunStartDate() || '__no_run__';
   appData.badgeCounts = {};
   appData.badgeCountedRun = {};
   appData.currentRunStartDate = currentRunId;
-  appData.badgeCountsVersion = 2;
+  appData.badgeCountsVersion = 3;
   for (const id of Object.keys(appData.earnedBadges || {})) {
     appData.badgeCounts[id] = 1;
     appData.badgeCountedRun[id] = currentRunId;
