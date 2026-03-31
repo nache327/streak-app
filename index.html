@@ -1521,6 +1521,10 @@
   <!-- BADGES -->
   <div id="screen-badges" class="screen">
     <div class="badges-grid" id="badges-grid"></div>
+    <div style="margin-top:1.5rem;display:flex;gap:0.6rem;justify-content:center;">
+      <button onclick="testBadgeMultiplier()" style="background:none;border:1px solid var(--muted);border-radius:8px;color:var(--sub);font-size:0.72rem;padding:0.4rem 0.9rem;cursor:pointer;">🧪 Simulate 2× Re-earn</button>
+      <button onclick="resetBadgeMultiplierTest()" style="background:none;border:1px solid var(--muted);border-radius:8px;color:var(--sub);font-size:0.72rem;padding:0.4rem 0.9rem;cursor:pointer;">↩ Reset Test</button>
+    </div>
   </div>
 
   <!-- SETTINGS -->
@@ -2160,6 +2164,26 @@ function renderBadges() {
     `;
     grid.appendChild(card);
   });
+}
+
+// ── TEMP TEST HELPERS (remove after confirming multiplier pills work) ──
+function testBadgeMultiplier() {
+  if (!appData.badgeCounts) appData.badgeCounts = {};
+  for (const id of Object.keys(appData.earnedBadges || {})) {
+    appData.badgeCounts[id] = 2;
+  }
+  saveData(appData);
+  renderBadges();
+  showToast('Showing 2× pills on earned badges');
+}
+function resetBadgeMultiplierTest() {
+  if (!appData.badgeCounts) return;
+  for (const id of Object.keys(appData.earnedBadges || {})) {
+    appData.badgeCounts[id] = 1;
+  }
+  saveData(appData);
+  renderBadges();
+  showToast('Reset badge counts to 1');
 }
 
 function playBadgeSound() {
