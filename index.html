@@ -17,7 +17,8 @@
         appId: "aaaa6422-7202-4d6e-8010-618cb66ac95e",
         allowLocalhostAsSecureOrigin: true,
         notifyButton: { enable: false },
-        serviceWorkerPath: "OneSignalSDKWorker.js",
+        serviceWorkerPath: "/streak-app/OneSignalSDKWorker.js",
+        serviceWorkerParam: { scope: "/streak-app/" },
       });
       window._os = OneSignal;
       // If notification permission is already granted, opt in immediately
@@ -1521,6 +1522,11 @@
       <div class="settings-label">Reminders</div>
       <div id="reminders-list"></div>
       <button class="btn-outline" onclick="addCustomReminder()" style="margin-top:0.7rem;font-size:0.82rem;">+ Add Reminder</button>
+      <div id="push-status-row" style="margin-top:0.9rem;padding:0.7rem 0.8rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:0.75rem;line-height:1.6;">
+        <div style="color:var(--sub);margin-bottom:0.3rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;">Push Status</div>
+        <div id="push-status-text" style="color:var(--muted);">Checking…</div>
+        <button onclick="resubscribePush()" style="margin-top:0.5rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--sub);cursor:pointer;font-size:0.72rem;padding:0.3rem 0.7rem;">Re-subscribe</button>
+      </div>
       <div style="font-size:0.72rem;color:var(--muted);margin-top:0.7rem;line-height:1.7;">
         Reminders fire while this tab is open.<br>
         <span style="color:var(--sub);font-weight:500;">iPhone users:</span> Add to Home Screen for the most reliable experience — tap the Share button ⎦ in Safari → "Add to Home Screen", then open the app from there.
@@ -2424,6 +2430,38 @@ function deleteReminder(id) {
 function initNotifUI() {
   if (!appData.reminders) migrateReminders();
   renderReminderSettings();
+  updatePushStatus();
+}
+
+async function updatePushStatus() {
+  const el = document.getElementById('push-status-text');
+  if (!el) return;
+  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const os = await _waitForOneSignal();
+  if (!os) {
+    el.textContent = `iOS perm: ${perm} | OneSignal: SDK not loaded`;
+    el.style.color = 'var(--fail)';
+    return;
+  }
+  const opted = os.User.PushSubscription.optedIn;
+  const id = os.User.PushSubscription.id || 'none';
+  el.innerHTML = `iOS perm: <b>${perm}</b> | Subscribed: <b>${opted ? 'YES ✓' : 'NO ✗'}</b><br>ID: ${id.slice(0,16) || 'none'}`;
+  el.style.color = opted ? 'var(--success)' : 'var(--fail)';
+}
+
+async function resubscribePush() {
+  const el = document.getElementById('push-status-text');
+  if (el) { el.textContent = 'Trying to subscribe…'; el.style.color = 'var(--sub)'; }
+  const os = await _waitForOneSignal();
+  if (!os) { showToast('OneSignal SDK not loaded'); return; }
+  try {
+    await os.User.PushSubscription.optIn();
+    await os.User.addTags({ timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+    showToast('Push subscription attempt complete');
+  } catch(e) {
+    showToast('Error: ' + (e.message || e));
+  }
+  updatePushStatus();
 }
 
 let _reminderFiredDates = {};
