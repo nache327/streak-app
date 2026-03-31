@@ -18,7 +18,6 @@
           appId: "aaaa6422-7202-4d6e-8010-618cb66ac95e",
           allowLocalhostAsSecureOrigin: true,
           notifyButton: { enable: false },
-          serviceWorkerPath: "/streak-app/sw.js",
         });
         window._os = OneSignal;
       } catch(err) {
@@ -2649,13 +2648,13 @@ function bootApp() {
     if (e.key === 'Enter') startApp();
   });
   if ('serviceWorker' in navigator) {
-    // Unregister any stale service workers (e.g. old OneSignalSDKWorker.js)
+    // Unregister stale sw.js — OneSignalSDKWorker.js is now the single service worker
     navigator.serviceWorker.getRegistrations().then(regs => {
       regs.forEach(r => {
-        if (r.active && !r.active.scriptURL.includes('sw.js')) r.unregister();
+        if (r.active && !r.active.scriptURL.includes('OneSignalSDKWorker.js')) r.unregister();
       });
     });
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./OneSignalSDKWorker.js').catch(() => {});
   }
 })();
 </script>
