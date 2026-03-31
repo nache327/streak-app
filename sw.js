@@ -1,3 +1,6 @@
+// OneSignal push — must be first
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+
 const CACHE = 'streak-v1';
 
 self.addEventListener('install', e => {
