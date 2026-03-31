@@ -20,6 +20,12 @@
         serviceWorkerPath: "OneSignalSDKWorker.js",
       });
       window._os = OneSignal;
+      // If notification permission is already granted, opt in immediately
+      // (covers the case where user previously allowed iOS notifications but
+      //  OneSignal never completed its subscription registration)
+      if (Notification.permission === 'granted' && !OneSignal.User.PushSubscription.optedIn) {
+        try { await OneSignal.User.PushSubscription.optIn(); } catch(e) {}
+      }
       // Auto-enable reminders when user subscribes to push
       OneSignal.User.PushSubscription.addEventListener('change', e => {
         if (e.current.optedIn && typeof autoEnablePresetReminders === 'function') {
@@ -2251,7 +2257,9 @@ async function autoEnablePresetReminders() {
   _waitForOneSignal().then(async os => {
     if (!os) return;
     try {
-      await os.Notifications.requestPermission();
+      if (!os.User.PushSubscription.optedIn) {
+        await os.User.PushSubscription.optIn();
+      }
       await os.User.addTags({
         morning_enabled: 'true',
         evening_enabled: 'true',
@@ -2365,7 +2373,10 @@ async function toggleReminder(id) {
     _waitForOneSignal().then(async os => {
       if (!os) return;
       try {
-        await os.Notifications.requestPermission();
+        // optIn() is the v16 way — works even if permission was granted outside of OneSignal
+        if (!os.User.PushSubscription.optedIn) {
+          await os.User.PushSubscription.optIn();
+        }
         await os.User.addTags({
           [r.id + '_enabled']: 'true',
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
