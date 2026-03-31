@@ -1190,6 +1190,125 @@
       padding: 0;
     }
 
+    /* ── MODE TOGGLE (onboarding) ── */
+    .mode-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .mode-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--sub);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0.75rem 0.5rem;
+      transition: all 0.15s;
+      line-height: 1.3;
+      text-align: center;
+    }
+    .mode-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a0a0a;
+      font-weight: 700;
+    }
+    .mode-toggle-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--sub);
+    }
+
+    /* ── CHECKIN QUESTION ── */
+    .checkin-question {
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--sub);
+      text-align: center;
+      margin-bottom: 0.7rem;
+    }
+
+    /* ── MOTIVATION LINE ── */
+    .streak-motivation {
+      font-size: 0.88rem;
+      color: var(--sub);
+      text-align: center;
+      margin-top: 0.5rem;
+      line-height: 1.5;
+      min-height: 1.3em;
+    }
+
+    /* ── WEEK STRIP HEADER ── */
+    .week-strip-header {
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 0.4rem;
+    }
+
+    /* ── CONFIRM MODAL ── */
+    #confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    #confirm-overlay.open { display: flex; }
+    .confirm-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.8rem;
+      width: 100%;
+      max-width: 340px;
+      animation: slideUp 0.2s ease;
+    }
+    .confirm-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem;
+      color: var(--text);
+      margin-bottom: 0.7rem;
+    }
+    .confirm-body {
+      font-size: 0.85rem;
+      color: var(--sub);
+      line-height: 1.6;
+      margin-bottom: 1.4rem;
+    }
+    .confirm-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+    .btn-confirm-danger {
+      background: var(--fail);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 0.75rem 1rem;
+      transition: opacity 0.15s;
+    }
+    .btn-confirm-danger:hover { opacity: 0.85; }
+
     /* ── STATS EMPTY STATE ── */
     .stats-empty {
       text-align: center;
@@ -1218,6 +1337,11 @@
   <div class="onboard-form">
     <label for="goal-input">What's your daily goal?</label>
     <input id="goal-input" type="text" placeholder="e.g. No junk food" maxlength="60" />
+    <div class="mode-toggle-label">This goal is something I want to…</div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-btn-do" onclick="setOnboardMode('do')">✓ DO daily<br><span style="font-size:0.75rem;opacity:0.75;">e.g. Exercise</span></button>
+      <button class="mode-btn" id="mode-btn-avoid" onclick="setOnboardMode('avoid')">✕ AVOID daily<br><span style="font-size:0.75rem;opacity:0.75;">e.g. No junk food</span></button>
+    </div>
     <button class="btn-primary" onclick="startApp()">Start Tracking</button>
   </div>
 </div>
@@ -1280,6 +1404,7 @@
       <div class="streak-unit">days</div>
       <div class="streak-milestone-label" id="streak-milestone-label"></div>
       <div class="streak-target" id="dash-target"></div>
+      <div class="streak-motivation" id="streak-motivation"></div>
     </div>
 
     <div class="mini-stats">
@@ -1297,9 +1422,11 @@
       </div>
     </div>
 
+    <div class="week-strip-header">Last 7 days</div>
     <div class="week-strip" id="week-strip"></div>
 
     <!-- Check-in -->
+    <div class="checkin-question" id="checkin-question"></div>
     <div class="checkin-area" id="checkin-area">
       <button class="btn-yes" onclick="logDay('yes')">✓ Yes</button>
       <button class="btn-no"  onclick="logDay('no')">✗ No</button>
@@ -1319,8 +1446,8 @@
       <div class="cal-title" id="cal-title">—</div>
       <button class="cal-nav" id="cal-next">›</button>
     </div>
+    <div style="font-size:0.82rem;color:var(--muted);text-align:center;margin-bottom:0.7rem;">✎ Tap any past day to log or edit</div>
     <div class="cal-grid" id="cal-grid"></div>
-    <div style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:0.8rem;">Tap any past day to log or edit</div>
   </div>
 
   <!-- STATS -->
@@ -1328,8 +1455,8 @@
     <div id="stats-empty-state" style="display:none;">
       <div class="stats-empty">
         <span class="stats-empty-icon">🔥</span>
-        <div class="stats-empty-title">You're just getting started!</div>
-        <div class="stats-empty-sub">Log your first day to see your stats.<br>Every streak begins with a single day.</div>
+        <div class="stats-empty-title">Nothing here yet</div>
+        <div class="stats-empty-sub">Your stats will appear here after your first log. Tap TODAY to get started 🔥</div>
       </div>
     </div>
     <div id="stats-content">
@@ -1352,11 +1479,15 @@
         </div>
         <div class="stat-card">
           <div class="stat-card-val fail" id="stat-fails">0</div>
-          <div class="stat-card-lbl">Total Fails</div>
+          <div class="stat-card-lbl">Misses</div>
         </div>
         <div class="stat-card full">
           <div class="stat-card-val accent" id="stat-rate">—</div>
           <div class="stat-card-lbl">Success Rate</div>
+        </div>
+        <div class="stat-card full">
+          <div class="stat-card-val accent" id="stat-next-val">—</div>
+          <div class="stat-card-lbl" id="stat-next-lbl">Next Milestone</div>
         </div>
       </div>
     </div>
@@ -1369,6 +1500,11 @@
 
   <!-- SETTINGS -->
   <div id="screen-settings" class="screen">
+    <div class="settings-section">
+      <div class="settings-label">Goal Mode</div>
+      <div id="settings-mode-toggle"></div>
+    </div>
+
     <div class="settings-section">
       <div class="settings-label">Rename Goal</div>
       <input class="settings-input" id="rename-input" type="text" />
@@ -1396,6 +1532,18 @@
     <div class="settings-section">
       <div class="settings-label">Danger Zone</div>
       <button class="btn-outline btn-danger" onclick="resetApp()">Reset All Data</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="confirm-overlay" onclick="closeConfirmOnOverlay(event)">
+  <div class="confirm-modal">
+    <div class="confirm-title" id="confirm-title">Are you sure?</div>
+    <div class="confirm-body" id="confirm-body"></div>
+    <div class="confirm-actions">
+      <button class="btn-outline" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-confirm-danger" id="confirm-ok-btn" onclick="confirmOk()">Delete</button>
     </div>
   </div>
 </div>
@@ -1477,16 +1625,17 @@ function saveData(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-function createFreshState(goal) {
+function createFreshState(goal, mode) {
   return {
     version: 1,
     goal,
+    goalMode: mode || 'do',
     startDate: todayStr(),
     entries: {},
     earnedBadges: {},
     reminders: [
       { id: 'morning', time: '08:00', enabled: false, preset: true },
-      { id: 'evening', time: '21:00', enabled: false, preset: true },
+      { id: 'evening', time: '20:00', enabled: false, preset: true },
     ],
     createdAt: new Date().toISOString(),
   };
@@ -1556,6 +1705,104 @@ let appData = null;
 let calViewDate = new Date();
 let modalDate = null;
 let modalResult = null;
+let _onboardMode = 'do';
+let _confirmCallback = null;
+
+// ── MODE HELPERS ──
+function setOnboardMode(mode) {
+  _onboardMode = mode;
+  document.getElementById('mode-btn-do').classList.toggle('active', mode === 'do');
+  document.getElementById('mode-btn-avoid').classList.toggle('active', mode === 'avoid');
+}
+
+function getModeLabels() {
+  const mode = appData ? appData.goalMode : _onboardMode;
+  if (mode === 'avoid') {
+    return {
+      yes: '✓ Avoided',
+      no:  '✕ Broke It',
+      question: 'Did you avoid it today?',
+      doneYes: '✓ AVOIDED — stayed clean',
+      doneNo:  '✕ Broke it — missed today',
+      modalYes: '✓ Avoided',
+      modalNo:  '✕ Broke It',
+    };
+  }
+  return {
+    yes: '✓ Yes',
+    no:  '✗ No',
+    question: 'Did you do it today?',
+    doneYes: '✓ YES — kept it',
+    doneNo:  '✗ No — missed today',
+    modalYes: '✓ Yes',
+    modalNo:  '✗ No',
+  };
+}
+
+function getMotivationLine(s) {
+  const hasHistory = s.wins + s.fails > 0;
+  if (s.currentStreak === 0 && !hasHistory) return 'Every streak starts with Day 1. Let\'s go.';
+  if (s.currentStreak === 0) return 'Streak reset. Bounce back today.';
+  if (s.currentStreak === 1) return 'Day 1 done. Don\'t stop now.';
+  if (s.currentStreak === 7) return 'One week! You\'re building something real.';
+  if (s.currentStreak === 14) return 'Two weeks straight. This is becoming who you are.';
+  if (s.currentStreak === 30) return `${s.currentStreak} days. This is who you are now.`;
+  if (s.currentStreak >= 30) return `${s.currentStreak} days. This is who you are now.`;
+  return `${s.currentStreak} days strong. Keep the momentum.`;
+}
+
+function getNextMilestone(s) {
+  if (!appData.earnedBadges) return null;
+  const next = BADGES.find(b => b.streak > s.currentStreak && !appData.earnedBadges[b.id]);
+  if (!next) return null;
+  return { days: next.streak - s.currentStreak, name: next.name, target: next.streak };
+}
+
+// ── CONFIRM MODAL ──
+function showConfirm(title, body, onConfirm, okLabel) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-body').textContent = body;
+  document.getElementById('confirm-ok-btn').textContent = okLabel || 'Delete';
+  _confirmCallback = onConfirm;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  _confirmCallback = null;
+}
+
+function confirmOk() {
+  const fn = _confirmCallback;
+  closeConfirm();
+  if (fn) fn();
+}
+
+function closeConfirmOnOverlay(e) {
+  if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
+}
+
+// ── SETTINGS MODE TOGGLE ──
+function renderModeSettings() {
+  const container = document.getElementById('settings-mode-toggle');
+  if (!container) return;
+  const mode = appData.goalMode || 'do';
+  container.innerHTML = `
+    <div style="font-size:0.78rem;color:var(--sub);margin-bottom:0.7rem;line-height:1.5;">Change how check-in buttons are labeled for your goal.</div>
+    <div class="mode-toggle">
+      <button class="mode-btn ${mode === 'do' ? 'active' : ''}" onclick="setSettingsMode('do')">✓ DO daily<br><span style="font-size:0.75rem;opacity:0.75;">e.g. Exercise</span></button>
+      <button class="mode-btn ${mode === 'avoid' ? 'active' : ''}" onclick="setSettingsMode('avoid')">✕ AVOID daily<br><span style="font-size:0.75rem;opacity:0.75;">e.g. No junk food</span></button>
+    </div>
+  `;
+}
+
+function setSettingsMode(mode) {
+  appData.goalMode = mode;
+  saveData(appData);
+  renderModeSettings();
+  renderDashboard();
+  showToast('Goal mode updated');
+}
 
 // ── ROUTER ──
 function showScreen(name) {
@@ -1569,6 +1816,7 @@ function showScreen(name) {
   if (name === 'badges') renderBadges();
   if (name === 'settings') {
     document.getElementById('rename-input').value = appData.goal;
+    renderModeSettings();
     initNotifUI();
   }
 }
@@ -1612,6 +1860,10 @@ function renderDashboard() {
     }
   }
 
+  // Motivation line
+  const motivEl = document.getElementById('streak-motivation');
+  if (motivEl) motivEl.textContent = getMotivationLine(s);
+
   // 7-day strip
   const strip = document.getElementById('week-strip');
   strip.innerHTML = '';
@@ -1631,15 +1883,23 @@ function renderDashboard() {
   }
 
   // Check-in state
+  const labels = getModeLabels();
   const todayEntry = appData.entries[today];
+  const qEl = document.getElementById('checkin-question');
   if (todayEntry) {
+    if (qEl) qEl.style.display = 'none';
     document.getElementById('checkin-area').style.display = 'none';
     document.getElementById('checkin-done').style.display = 'block';
     const lbl = document.getElementById('done-result-label');
-    lbl.textContent = todayEntry.result === 'yes' ? '✓ YES — kept it' : '✗ No — missed today';
+    lbl.textContent = todayEntry.result === 'yes' ? labels.doneYes : labels.doneNo;
     lbl.className = 'done-result ' + todayEntry.result;
     document.getElementById('done-note-display').textContent = todayEntry.note || '';
   } else {
+    if (qEl) { qEl.style.display = 'block'; qEl.textContent = labels.question; }
+    const yesBtn = document.querySelector('#checkin-area .btn-yes');
+    const noBtn  = document.querySelector('#checkin-area .btn-no');
+    if (yesBtn) yesBtn.textContent = labels.yes;
+    if (noBtn)  noBtn.textContent  = labels.no;
     document.getElementById('checkin-area').style.display = 'grid';
     document.getElementById('checkin-done').style.display = 'none';
   }
@@ -1692,6 +1952,9 @@ function renderStats() {
   document.getElementById('stat-wins').textContent = s.wins;
   document.getElementById('stat-fails').textContent = s.fails;
   document.getElementById('stat-rate').textContent = s.rate;
+  const nm = getNextMilestone(s);
+  document.getElementById('stat-next-val').textContent = nm ? nm.days + ' day' + (nm.days !== 1 ? 's' : '') : '🏆';
+  document.getElementById('stat-next-lbl').textContent = nm ? `Until "${nm.name}"` : 'All Milestones Reached';
 
   // 30-day bar chart
   const bars = document.getElementById('chart-bars');
@@ -1770,8 +2033,13 @@ function selectModalResult(result) {
 }
 
 function updateModalResultBtns() {
-  document.getElementById('modal-btn-yes').className = 'modal-result-btn yes' + (modalResult === 'yes' ? ' active' : '');
-  document.getElementById('modal-btn-no').className  = 'modal-result-btn no'  + (modalResult === 'no'  ? ' active' : '');
+  const labels = getModeLabels();
+  const yBtn = document.getElementById('modal-btn-yes');
+  const nBtn = document.getElementById('modal-btn-no');
+  yBtn.className = 'modal-result-btn yes' + (modalResult === 'yes' ? ' active' : '');
+  nBtn.className = 'modal-result-btn no'  + (modalResult === 'no'  ? ' active' : '');
+  yBtn.textContent = labels.modalYes;
+  nBtn.textContent = labels.modalNo;
 }
 
 function saveModal() {
@@ -2016,7 +2284,7 @@ function migrateReminders() {
   const hadOld = appData.reminderEnabled && appData.reminderTime;
   appData.reminders = [
     { id: 'morning', time: '08:00', enabled: false, preset: true },
-    { id: 'evening', time: '21:00', enabled: false, preset: true },
+    { id: 'evening', time: '20:00', enabled: false, preset: true },
   ];
   if (hadOld) {
     appData.reminders.push({ id: 'custom_migrated', time: appData.reminderTime, enabled: true, preset: false });
@@ -2104,7 +2372,7 @@ async function toggleReminder(id) {
         });
       } catch(e) {}
     });
-    const label = r.id === 'morning' ? '8 AM' : '9 PM';
+    const label = r.id === 'morning' ? '8 AM' : '8 PM';
     // On iOS, push only works when installed to Home Screen
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -2261,9 +2529,12 @@ function importData(event) {
 }
 
 function resetApp() {
-  if (!confirm('This will delete all your data. Are you sure?')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  location.reload();
+  showConfirm(
+    'Reset All Data',
+    'This will permanently delete all your streak data, badges, and settings. This cannot be undone.',
+    () => { localStorage.removeItem(STORAGE_KEY); location.reload(); },
+    'Reset Everything'
+  );
 }
 
 // ── EVENT BINDING ──
@@ -2291,12 +2562,13 @@ function bindEvents() {
 function startApp() {
   const goal = document.getElementById('goal-input').value.trim();
   if (!goal) { document.getElementById('goal-input').focus(); return; }
-  appData = createFreshState(goal);
+  appData = createFreshState(goal, _onboardMode);
   saveData(appData);
   bootApp();
 }
 
 function bootApp() {
+  if (!appData.goalMode) appData.goalMode = 'do';
   document.getElementById('screen-onboard').style.display = 'none';
   document.getElementById('app').classList.remove('hidden');
   bindEvents();
