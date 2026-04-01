@@ -160,12 +160,16 @@
     }
 
     .topbar-wordmark {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: var(--accent);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+    }
+
+    .topbar-logo-img {
+      height: 28px;
+      width: auto;
+      display: block;
+      object-fit: contain;
+      background: transparent;
     }
 
     .topbar-date {
@@ -1375,6 +1379,9 @@
 <div id="app" class="hidden">
   <!-- Top bar -->
   <div id="topbar">
+    <div class="topbar-wordmark">
+      <img src="STREAK_logo.png" alt="STREAK" class="topbar-logo-img" />
+    </div>
     <div class="topbar-date" id="topbar-date">—</div>
   </div>
   <div id="goal-row">

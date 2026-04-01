@@ -2,10 +2,10 @@
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 
 // PWA cache
-const CACHE = 'streak-v4';
+const CACHE = 'streak-v5';
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.add('./')));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './STREAK_logo.png'])));
   self.skipWaiting();
 });
 
