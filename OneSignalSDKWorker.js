@@ -5,7 +5,7 @@ importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 const CACHE = 'streak-v5';
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './STREAK logo.png'])));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './STREAK logo v2.png'])));
   self.skipWaiting();
 });
 
