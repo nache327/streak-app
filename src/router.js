@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { renderCalendar } from './render/calendar.js';
 import { renderStats } from './render/stats.js';
 import { renderBadges } from './badges.js';
-import { renderModeSettings, renderScheduleSettings } from './render/settings.js';
+import { renderModeSettings, renderScheduleSettings, renderPrivacySettings } from './render/settings.js';
 import { initNotifUI } from './notifs.js';
 
 export function showScreen(name) {
@@ -19,6 +19,7 @@ export function showScreen(name) {
     document.getElementById('rename-input').value = state.appData.goal;
     renderModeSettings();
     renderScheduleSettings();
+    renderPrivacySettings();
     initNotifUI();
   }
 }

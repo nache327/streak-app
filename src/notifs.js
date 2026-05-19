@@ -3,6 +3,7 @@ import { state } from './state.js';
 import { saveData } from './data.js';
 import { todayStr } from './dates.js';
 import { showToast } from './toast.js';
+import { isPro, showProPrompt } from './pro.js';
 
 // ── NOTIFICATION BANNERS ──
 export function isIOS() {
@@ -215,6 +216,8 @@ export async function toggleReminder(id) {
 }
 
 export function addCustomReminder() {
+  // Pro gate: free tier gets the two presets only.
+  if (!isPro()) { showProPrompt('custom-reminder'); return; }
   const appData = state.appData;
   if (!appData.reminders) migrateReminders();
   appData.reminders.push({ id: 'custom_' + Date.now(), time: '12:00', enabled: false, preset: false });

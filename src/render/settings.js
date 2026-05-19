@@ -3,6 +3,7 @@ import { state } from '../state.js';
 import { saveData } from '../data.js';
 import { showToast } from '../toast.js';
 import { renderDashboard } from './dashboard.js';
+import { toggleBiometricLock } from '../privacy.js';
 
 export function renderModeSettings() {
   const container = document.getElementById('settings-mode-toggle');
@@ -70,4 +71,77 @@ function setSettingsWeeklyTarget(n) {
   renderScheduleSettings();
   renderDashboard();
   showToast(`Target set to ${n} days/week`);
+}
+
+export function renderPrivacySettings() {
+  const container = document.getElementById('settings-privacy');
+  if (!container) return;
+  const d = state.appData;
+  const bio = !!d.biometricLockEnabled;
+  const hide = !!d.hideGoalName;
+  const discreet = d.discreetNotifications !== false;
+  container.innerHTML = `
+    <div class="privacy-row">
+      <div class="privacy-row-info">
+        <div class="privacy-row-label">Lock app with PIN</div>
+        <div class="privacy-row-sub">A 4-digit PIN is required on launch. Native Face ID / fingerprint comes with the app version.</div>
+      </div>
+      <button class="privacy-toggle ${bio ? 'on' : ''}" data-key="biometric">${bio ? 'ON' : 'OFF'}</button>
+    </div>
+    <div class="privacy-row">
+      <div class="privacy-row-info">
+        <div class="privacy-row-label">Hide goal name in app</div>
+        <div class="privacy-row-sub">Show a label of your choice anywhere your real goal would appear.</div>
+      </div>
+      <button class="privacy-toggle ${hide ? 'on' : ''}" data-key="hide-goal">${hide ? 'ON' : 'OFF'}</button>
+    </div>
+    ${hide ? `
+      <div style="margin-top:0.5rem;">
+        <input class="settings-input" id="display-goal-input" type="text" maxlength="40" placeholder="My Goal" value="${(d.displayGoalName || '').replace(/"/g, '&quot;')}" />
+      </div>
+    ` : ''}
+    <div class="privacy-row">
+      <div class="privacy-row-info">
+        <div class="privacy-row-label">Discreet notifications</div>
+        <div class="privacy-row-sub">Notification bodies never reveal your goal. (Already enforced.)</div>
+      </div>
+      <button class="privacy-toggle ${discreet ? 'on' : ''}" data-key="discreet">${discreet ? 'ON' : 'OFF'}</button>
+    </div>
+  `;
+  container.querySelectorAll('.privacy-toggle').forEach(btn => {
+    btn.addEventListener('click', () => onPrivacyToggle(btn.dataset.key));
+  });
+  const dgi = document.getElementById('display-goal-input');
+  if (dgi) {
+    dgi.addEventListener('input', () => {
+      state.appData.displayGoalName = dgi.value;
+      saveData(state.appData);
+      renderDashboard();
+    });
+  }
+}
+
+async function onPrivacyToggle(key) {
+  const d = state.appData;
+  if (key === 'biometric') {
+    const enable = !d.biometricLockEnabled;
+    const ok = await toggleBiometricLock(enable);
+    if (ok) {
+      renderPrivacySettings();
+      showToast(enable ? 'App lock enabled' : 'App lock disabled');
+    }
+    return;
+  }
+  if (key === 'hide-goal') {
+    d.hideGoalName = !d.hideGoalName;
+    saveData(d);
+    renderPrivacySettings();
+    renderDashboard();
+    return;
+  }
+  if (key === 'discreet') {
+    d.discreetNotifications = !d.discreetNotifications;
+    saveData(d);
+    renderPrivacySettings();
+  }
 }

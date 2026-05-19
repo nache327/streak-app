@@ -33,6 +33,8 @@ import {
 import { renameGoal, startGoalEdit, saveGoalInline, handleGoalKey } from './goal.js';
 import { exportData, importData, resetApp } from './export.js';
 import { addCustomReminder } from './notifs.js';
+import { gateOnLock } from './privacy.js';
+import { closeProPrompt, proCtaClicked, wordmarkTapped } from './pro.js';
 
 function bindStaticEvents() {
   // Onboarding mode buttons
@@ -105,6 +107,34 @@ function bindStaticEvents() {
   document.getElementById('goal-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') startApp();
   });
+
+  // Dev gesture: 7 taps on the wordmark within 3s flips isPro.
+  document.querySelector('.topbar-wordmark').addEventListener('click', wordmarkTapped);
+
+  // Pro upgrade prompt buttons
+  document.getElementById('pro-later-btn').addEventListener('click', closeProPrompt);
+  document.getElementById('pro-cta-btn').addEventListener('click', proCtaClicked);
+
+  // Onboarding placeholder rotation (signals goal versatility)
+  startPlaceholderRotation();
+}
+
+const PLACEHOLDERS = [
+  'e.g. No junk food',
+  'e.g. Lift 20 min',
+  'e.g. Read scripture',
+  'e.g. No social media',
+  'e.g. Drink water',
+];
+function startPlaceholderRotation() {
+  const input = document.getElementById('goal-input');
+  if (!input) return;
+  let i = 0;
+  setInterval(() => {
+    if (input.value || document.activeElement === input) return;
+    i = (i + 1) % PLACEHOLDERS.length;
+    input.placeholder = PLACEHOLDERS[i];
+  }, 3000);
 }
 
 // ── EVENT BINDING (per-app boot) ──
@@ -126,7 +156,14 @@ function bindEvents() {
   if (!bindEvents._visibilityBound) {
     bindEvents._visibilityBound = true;
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') checkMissedReminders();
+      const appEl = document.getElementById('app');
+      if (document.visibilityState === 'hidden') {
+        // Background blur — protects iOS app-switcher screenshots. Default-on.
+        if (appEl) appEl.classList.add('app-blurred');
+      } else {
+        if (appEl) appEl.classList.remove('app-blurred');
+        checkMissedReminders();
+      }
     });
   }
 }
@@ -168,7 +205,9 @@ bindStaticEvents();
 const data = loadData();
 if (data) {
   state.appData = data;
-  bootApp();
+  // Gate boot behind the PIN lock screen when enabled; gateOnLock resolves
+  // immediately when the lock is off.
+  gateOnLock().then(bootApp);
 }
 
 if ('serviceWorker' in navigator) {

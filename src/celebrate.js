@@ -1,9 +1,13 @@
 // ── CELEBRATIONS ──
 import { MILESTONE_MSGS } from './constants.js';
+import { maybeShow7DayPrompt } from './pro.js';
+
+let _lastMilestone = 0;
 
 export function showMilestoneBanner(n) {
   const m = MILESTONE_MSGS[n];
   if (!m) return;
+  _lastMilestone = n;
   document.getElementById('milestone-emoji').textContent = m.emoji;
   document.getElementById('milestone-title').textContent = m.title;
   document.getElementById('milestone-sub').textContent = m.sub;
@@ -13,6 +17,9 @@ export function showMilestoneBanner(n) {
 
 export function closeMilestone() {
   document.getElementById('milestone-banner').classList.remove('open');
+  // 7-day milestone is the only Pro upgrade trigger in the daily loop.
+  if (_lastMilestone === 7) maybeShow7DayPrompt(7);
+  _lastMilestone = 0;
 }
 
 export function launchConfetti() {

@@ -263,6 +263,11 @@
     </div>
 
     <div class="settings-section">
+      <div class="settings-label">Privacy</div>
+      <div id="settings-privacy"></div>
+    </div>
+
+    <div class="settings-section">
       <div class="settings-label">Reminders</div>
       <div id="reminders-list"></div>
       <button class="btn-outline" style="margin-top:0.7rem;font-size:0.82rem;">+ Add Reminder</button>
@@ -333,6 +338,34 @@
   <div class="milestone-title" id="milestone-title">—</div>
   <div class="milestone-sub" id="milestone-sub">—</div>
   <button class="milestone-close">Keep Going</button>
+</div>
+
+<!-- LOCK SCREEN OVERLAY -->
+<div id="lock-overlay">
+  <div class="lock-modal">
+    <img src="streak-logo.png" alt="STREAK" class="lock-logo" />
+    <div class="lock-title" id="lock-title">Enter your PIN</div>
+    <div class="lock-sub" id="lock-sub">4 digits to unlock.</div>
+    <input id="lock-pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" />
+    <div class="lock-error" id="lock-error"></div>
+    <div class="lock-actions">
+      <button class="btn-outline" id="lock-cancel-btn" style="display:none;">Cancel</button>
+      <button class="btn-primary" id="lock-unlock-btn">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRO PROMPT MODAL -->
+<div id="pro-overlay">
+  <div class="pro-modal">
+    <div class="pro-badge">STREAK PRO</div>
+    <div class="pro-title" id="pro-title">—</div>
+    <div class="pro-body" id="pro-body">—</div>
+    <div class="pro-actions">
+      <button class="btn-outline" id="pro-later-btn">Maybe later</button>
+      <button class="btn-primary" id="pro-cta-btn">Get Pro</button>
+    </div>
+  </div>
 </div>
 
 <!-- CONFETTI -->

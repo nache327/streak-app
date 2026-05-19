@@ -1,6 +1,7 @@
 import { state } from '../state.js';
-import { todayStr, weekStart } from '../dates.js';
+import { todayStr, weekStart, addDays } from '../dates.js';
 import { openModal } from '../modal.js';
+import { isPro, showProPrompt } from '../pro.js';
 
 export function renderCalendar() {
   const appData = state.appData;
@@ -13,6 +14,22 @@ export function renderCalendar() {
   const today = todayStr();
   const grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
+
+  // Free tier: lock viewing months whose last day is more than 30 days ago.
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const lastOfMonthStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  const cutoffStr = addDays(today, -30);
+  if (!isPro() && lastOfMonthStr < cutoffStr) {
+    grid.innerHTML = `
+      <div style="grid-column:1 / -1;padding:2rem 1rem;text-align:center;">
+        <div style="font-family:'Syne',sans-serif;font-size:1rem;margin-bottom:0.4rem;">Pro unlocks full history</div>
+        <div style="font-size:0.85rem;color:var(--sub);line-height:1.5;margin-bottom:1rem;">Free tracks the last 30 days.</div>
+        <button class="btn-primary" id="cal-pro-cta" style="max-width:200px;margin:0 auto;">Get Pro</button>
+      </div>
+    `;
+    document.getElementById('cal-pro-cta').addEventListener('click', () => showProPrompt('calendar-history'));
+    return;
+  }
   ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
     const el = document.createElement('div');
     el.className = 'cal-dow';
