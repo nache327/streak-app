@@ -156,13 +156,15 @@ group('stats: daily mode', t => {
   t.eq('rate', s.rate, '100%');
 
   // break the streak: insert a 'no' yesterday
+  // Resulting timeline (oldest -> newest): yes, yes, yes, NO, yes
+  // Runs: 3 then reset then 1. best = 3.
   const data2 = JSON.parse(JSON.stringify(data));
   data2.entries[addDays(today, -1)] = { result: 'no', note: '', loggedAt: '' };
   const s2 = computeStats(data2);
   t.eq('streak resets after no', s2.currentStreak, 1);
   t.eq('wins still counted', s2.wins, 4);
   t.eq('fails counted', s2.fails, 1);
-  t.eq('best preserved (run was 5)', s2.best, 4);
+  t.eq('best = longest pre-break run (3)', s2.best, 3);
 });
 
 // ── WEEKLY STATS ──
@@ -171,8 +173,10 @@ group('stats: weekly_target mode (target=5)', t => {
   const thisWeek = weekStart(today);
   const lastWeek = addDays(thisWeek, -7);
 
-  // Populate last week with exactly 5 yes-days (Mon-Fri)
-  function makeWeekly(yesDaysLastWeek, yesDaysExtraOld) {
+  // Populate last week with `yesDaysLastWeek` yes-days; optionally seed an
+  // ancient week with `ancientYes` yes-days (used to push the total over the
+  // earn-a-freeze threshold without creating a second short-by-1 week).
+  function makeWeekly(yesDaysLastWeek, ancientYes) {
     const d = {
       version: 2, goal: 'g', goalMode: 'do', goalType: 'weekly_target', weeklyTarget: 5,
       entries: {}, earnedBadges: {}, badgeCounts: {}, badgeCountedRun: {},
@@ -181,9 +185,11 @@ group('stats: weekly_target mode (target=5)', t => {
     for (let i = 0; i < yesDaysLastWeek; i++) {
       d.entries[addDays(lastWeek, i)] = { result: 'yes', note: '', loggedAt: '' };
     }
-    // Add ancient yes-days a few weeks earlier — used to test freeze accrual
+    // Ancient yes-days: place 0..ancientYes inside an old week. Use 5 to make
+    // that week a natural hit (no freeze consumed) — clean baseline for freeze
+    // tests on the most recent week.
     const ancient = addDays(thisWeek, -7 * 4);
-    for (let i = 0; i < (yesDaysExtraOld || 0); i++) {
+    for (let i = 0; i < (ancientYes || 0); i++) {
       d.entries[addDays(ancient, i)] = { result: 'yes', note: '', loggedAt: '' };
     }
     return d;
@@ -201,22 +207,34 @@ group('stats: weekly_target mode (target=5)', t => {
   t.eq('4 yes-days WITHOUT freeze does not hit', sB.weekHit[lastWeek], false);
   t.eq('streak=0', sB.currentStreak, 0);
 
-  // 4 yes-days last week + enough total to earn a freeze (7+ yes total)
-  const dC = makeWeekly(4, 4); // 4 last week + 4 ancient = 8 total yes, earns 1 freeze
+  // 4 yes last week + 5 ancient (natural hit, doesn't compete for freezes)
+  // Total wins = 9 -> earns 1 freeze. Only lastWeek is short-by-1, so the
+  // freeze applies there unambiguously.
+  const dC = makeWeekly(4, 5);
   const sC = computeStats(dC);
-  t.eq('earned >= 1 freeze (wins=8 -> floor(8/7)=1)', dC.freezesEarned >= 1, true);
-  t.eq('freeze applied to most recent short week (newest-first)', sC.weekHit[lastWeek], true);
+  t.eq('earned >= 1 freeze (wins=9 -> floor(9/7)=1)', dC.freezesEarned >= 1, true);
+  t.eq('freeze applied to lastWeek', sC.weekHit[lastWeek], true);
   t.eq('weeklyFreezesByWeek records the lastWeek', !!dC.weeklyFreezesByWeek[lastWeek], true);
   t.eq('streak preserved by freeze', sC.currentStreak, 1);
 
-  // Pro cap: 14 yes-days, no freezes used yet
-  const dD = makeWeekly(0, 14);
+  // Pro cap: lots of ancient yes-days, no short weeks, no freezes used yet.
+  // makeWeekly only ever seeds the same ancient Monday so we can't put 14
+  // there without making it a different week — instead override directly.
+  const dD = makeWeekly(0, 0);
   dD.isPro = true;
+  for (let w = 1; w <= 4; w++) {
+    const wkStart = addDays(thisWeek, -7 * (w + 1)); // four older weeks, all natural hits
+    for (let i = 0; i < 7; i++) dD.entries[addDays(wkStart, i)] = { result: 'yes' };
+  }
   computeStats(dD);
   t.eq('pro cap allows up to 2 stored', dD.freezesEarned - dD.freezesUsed <= 2, true);
 
-  // Free cap: 14 yes-days, free user
-  const dE = makeWeekly(0, 14);
+  // Free cap: same data, but isPro=false. Cap should be 1.
+  const dE = makeWeekly(0, 0);
+  for (let w = 1; w <= 4; w++) {
+    const wkStart = addDays(thisWeek, -7 * (w + 1));
+    for (let i = 0; i < 7; i++) dE.entries[addDays(wkStart, i)] = { result: 'yes' };
+  }
   computeStats(dE);
   t.eq('free cap allows only 1 stored', dE.freezesEarned - dE.freezesUsed <= 1, true);
 });
