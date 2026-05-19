@@ -32,14 +32,14 @@ async function sendDailyReminders(env) {
   await Promise.all([
     sendNotification(env, {
       filters: [{ field: 'tag', key: 'morning_enabled', relation: '=', value: 'true' }],
-      headings: { en: 'Good Morning! 🔥' },
-      contents: { en: "Stay strong today — your streak is counting on you. Let's go!" },
+      headings: { en: 'Good morning' },
+      contents: { en: 'Take today when you have a minute.' },
       delivery_time_of_day: '8:00AM',
     }),
     sendNotification(env, {
       filters: [{ field: 'tag', key: 'evening_enabled', relation: '=', value: 'true' }],
-      headings: { en: 'Streak Check-In ✅' },
-      contents: { en: "Don't forget to log your day! Keep the streak alive." },
+      headings: { en: 'Quick check-in' },
+      contents: { en: 'How did today go?' },
       delivery_time_of_day: '8:00PM',
     }),
   ]);

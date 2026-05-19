@@ -1,5 +1,5 @@
 import { state } from '../state.js';
-import { todayStr } from '../dates.js';
+import { todayStr, weekStart } from '../dates.js';
 import { openModal } from '../modal.js';
 
 export function renderCalendar() {
@@ -7,6 +7,8 @@ export function renderCalendar() {
   const calViewDate = state.calViewDate;
   const year = calViewDate.getFullYear();
   const month = calViewDate.getMonth();
+  const isWeekly = (appData.goalType || 'daily') === 'weekly_target';
+  const frozenWeeks = appData.weeklyFreezesByWeek || {};
   document.getElementById('cal-title').textContent = calViewDate.toLocaleString('default', { month: 'long', year: 'numeric' });
   const today = todayStr();
   const grid = document.getElementById('cal-grid');
@@ -34,7 +36,13 @@ export function renderCalendar() {
     else cls += ' unlogged';
     if (str === today) cls += ' today';
     el.className = cls;
-    el.textContent = d;
+    // Snowflake indicator on the Monday cell of weeks where a freeze was used.
+    if (isWeekly && new Date(year, month, d).getDay() === 1 && frozenWeeks[weekStart(str)]) {
+      el.textContent = d + ' ❄';
+      el.title = 'Streak freeze used this week';
+    } else {
+      el.textContent = d;
+    }
     if (str <= today) el.onclick = () => openModal(str);
     grid.appendChild(el);
   }

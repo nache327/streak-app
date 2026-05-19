@@ -1,5 +1,5 @@
 import { state } from '../state.js';
-import { computeStats, getNextMilestone } from '../stats.js';
+import { computeStats, getNextMilestone, winsThisMonth } from '../stats.js';
 import { todayStr, addDays } from '../dates.js';
 
 export function renderStats() {
@@ -13,6 +13,7 @@ export function renderStats() {
   document.getElementById('stat-best').textContent = s.best;
   document.getElementById('stat-wins').textContent = s.wins;
   document.getElementById('stat-fails').textContent = s.fails;
+  document.getElementById('stat-wins-month').textContent = winsThisMonth(appData);
   document.getElementById('stat-rate').textContent = s.rate;
   const nm = getNextMilestone(s);
   document.getElementById('stat-next-val').textContent = nm ? nm.days + ' day' + (nm.days !== 1 ? 's' : '') : '🏆';

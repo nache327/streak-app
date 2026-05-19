@@ -1,5 +1,5 @@
 // ── BOOT + INIT ──
-import { state, setOnboardMode } from './state.js';
+import { state, setOnboardMode, setOnboardGoalType, setOnboardWeeklyTarget } from './state.js';
 import { loadData, saveData, createFreshState } from './data.js';
 import { computeStats } from './stats.js';
 import { showScreen } from './router.js';
@@ -39,6 +39,22 @@ function bindStaticEvents() {
   document.getElementById('mode-btn-do').addEventListener('click', () => setOnboardMode('do'));
   document.getElementById('mode-btn-avoid').addEventListener('click', () => setOnboardMode('avoid'));
 
+  // Onboarding frequency + weekly target
+  document.getElementById('freq-btn-daily').addEventListener('click', () => setOnboardGoalType('daily'));
+  document.getElementById('freq-btn-weekly').addEventListener('click', () => setOnboardGoalType('weekly_target'));
+  document.querySelectorAll('#weekly-target-row .target-btn').forEach(btn => {
+    btn.addEventListener('click', () => setOnboardWeeklyTarget(Number(btn.dataset.target)));
+  });
+
+  // Welcome-back banner dismiss
+  document.getElementById('welcome-dismiss').addEventListener('click', () => {
+    const banner = document.getElementById('welcome-banner');
+    banner.classList.remove('show');
+    if (banner.dataset.lastEntry) {
+      localStorage.setItem('welcome_back_dismissed_for', banner.dataset.lastEntry);
+    }
+  });
+
   // Start tracking
   document.querySelector('#screen-onboard .btn-primary').addEventListener('click', startApp);
 
@@ -57,17 +73,14 @@ function bindStaticEvents() {
   document.querySelector('#checkin-area .btn-no').addEventListener('click', () => logDay('no'));
   document.querySelector('#checkin-done button').addEventListener('click', editTodayInline);
 
-  // Settings — rename / reminders / data / danger zone
-  document.querySelector('#screen-settings .settings-section:nth-of-type(2) .btn-outline').addEventListener('click', renameGoal);
-  // Add Reminder button (inside the reminders section)
-  const remindersSection = document.getElementById('reminders-list').parentElement;
-  remindersSection.querySelector('button.btn-outline').addEventListener('click', addCustomReminder);
-  // Data section buttons
-  const dataButtons = document.querySelectorAll('#screen-settings .settings-section')[3].querySelectorAll('button.btn-outline');
-  dataButtons[0].addEventListener('click', exportData);
-  dataButtons[1].addEventListener('click', () => document.getElementById('import-file').click());
+  // Settings — rename / reminders / data / danger zone (selectors keyed by ID
+  // so adding/reordering sections doesn't break wiring).
+  document.getElementById('btn-rename-goal').addEventListener('click', renameGoal);
+  document.getElementById('reminders-list').parentElement
+    .querySelector('button.btn-outline').addEventListener('click', addCustomReminder);
+  document.getElementById('btn-export-data').addEventListener('click', exportData);
+  document.getElementById('btn-import-data').addEventListener('click', () => document.getElementById('import-file').click());
   document.getElementById('import-file').addEventListener('change', importData);
-  // Danger zone
   document.querySelector('#screen-settings .btn-danger').addEventListener('click', resetApp);
 
   // Confirm modal
@@ -121,7 +134,12 @@ function bindEvents() {
 function startApp() {
   const goal = document.getElementById('goal-input').value.trim();
   if (!goal) { document.getElementById('goal-input').focus(); return; }
-  state.appData = createFreshState(goal, state._onboardMode);
+  state.appData = createFreshState(
+    goal,
+    state._onboardMode,
+    state._onboardGoalType,
+    state._onboardWeeklyTarget
+  );
   saveData(state.appData);
   bootApp();
 }

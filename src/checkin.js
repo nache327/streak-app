@@ -56,12 +56,20 @@ export function editTodayInline() {
 
 export function getMotivationLine(s) {
   const hasHistory = s.wins + s.fails > 0;
-  if (s.currentStreak === 0 && !hasHistory) return 'Every streak starts with Day 1. Let\'s go.';
-  if (s.currentStreak === 0) return 'Streak reset. Today is your comeback.';
-  if (s.currentStreak === 1) return 'Day 1 done. Don\'t stop now.';
-  if (s.currentStreak === 7) return 'One week! You\'re building something real. 🔥';
-  if (s.currentStreak === 14) return 'Two weeks straight. You\'re locked in. 💪';
-  if (s.currentStreak === 21) return '21 days. Habit territory. Keep going.';
-  if (s.currentStreak >= 30) return `${s.currentStreak} days. This is who you are now.`;
-  return `${s.currentStreak} days strong — keep the chain alive!`;
+  if (s.goalType === 'weekly_target') {
+    const w = s.currentStreak;
+    if (w === 0) return "Let's get this week's target.";
+    if (w === 1) return 'One week hit. Keep going.';
+    if (w <= 3) return `${w} weeks of hitting your target.`;
+    return `${w} weeks straight. You found your rhythm.`;
+  }
+  const d = s.currentStreak;
+  if (d === 0 && !hasHistory) return "Every streak starts with Day 1. Let's go.";
+  if (d === 0) return "Welcome back. Today's the day.";
+  if (d === 1) return 'Day 1 done. One more tomorrow.';
+  if (d < 7) return `${d} days in. Build it up.`;
+  if (d < 14) return 'One full week. Real progress.';
+  if (d < 21) return "Two weeks. You're locked in.";
+  if (d < 30) return '21 days. Habit territory.';
+  return `${d} days. This is who you are now.`;
 }

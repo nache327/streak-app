@@ -3,24 +3,49 @@ import { computeStats } from '../stats.js';
 import { todayStr, addDays, dayOfWeek } from '../dates.js';
 import { getMotivationLine } from '../checkin.js';
 
+function maybeShowWelcomeBack(appData, s) {
+  const banner = document.getElementById('welcome-banner');
+  if (!banner) return;
+  // Suppress if user has already seen it for the current absence.
+  if (s.currentStreak > 0) { banner.classList.remove('show'); return; }
+  const days = Object.keys(appData.entries).sort();
+  if (days.length === 0) { banner.classList.remove('show'); return; }
+  const lastEntry = days[days.length - 1];
+  // Days between last entry and today.
+  const a = new Date(lastEntry), b = new Date(todayStr());
+  const gap = Math.floor((b - a) / 86400000);
+  if (gap < 3) { banner.classList.remove('show'); return; }
+  if (localStorage.getItem('welcome_back_dismissed_for') === lastEntry) return;
+  banner.classList.add('show');
+  banner.dataset.lastEntry = lastEntry;
+}
+
 export function renderDashboard() {
   const appData = state.appData;
   const s = computeStats(appData);
   const today = todayStr();
-  document.getElementById('topbar-goal').textContent = appData.goal;
+  const goalLabel = appData.hideGoalName && appData.displayGoalName ? appData.displayGoalName : appData.goal;
+  document.getElementById('topbar-goal').textContent = goalLabel;
   document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
   document.getElementById('dash-streak').textContent = s.currentStreak;
   document.getElementById('dash-best').textContent = s.best;
   document.getElementById('dash-wins').textContent = s.wins;
   document.getElementById('dash-rate').textContent = s.rate;
 
+  // Days vs Weeks label depending on goal type.
+  const unitEl = document.querySelector('.streak-unit');
+  if (unitEl) unitEl.textContent = s.goalType === 'weekly_target' ? 'weeks' : 'days';
+
+  maybeShowWelcomeBack(appData, s);
+
+  const unit = s.goalType === 'weekly_target' ? 'week' : 'day';
   const toGo = s.best > s.currentStreak ? s.best - s.currentStreak : 1;
   if (s.best === 0 || s.currentStreak === 0) {
     document.getElementById('dash-target').innerHTML = 'Start your streak today';
   } else if (s.currentStreak >= s.best) {
     document.getElementById('dash-target').innerHTML = '<span>Personal best!</span> Keep going';
   } else {
-    document.getElementById('dash-target').innerHTML = `<span>${toGo}</span> day${toGo !== 1 ? 's' : ''} to beat your best`;
+    document.getElementById('dash-target').innerHTML = `<span>${toGo}</span> ${unit}${toGo !== 1 ? 's' : ''} to beat your best`;
   }
 
   // Streak progress ring
@@ -33,7 +58,10 @@ export function renderDashboard() {
   if (ringFill) ringFill.style.strokeDashoffset = circumference * (1 - ringPct);
   const milestoneLabel = document.getElementById('streak-milestone-label');
   if (milestoneLabel) {
-    if (s.currentStreak === 0) {
+    if (s.goalType === 'weekly_target') {
+      // Day-based milestones don't translate cleanly to weekly mode; hide.
+      milestoneLabel.textContent = '';
+    } else if (s.currentStreak === 0) {
       milestoneLabel.textContent = '';
     } else if (s.currentStreak >= 100) {
       milestoneLabel.textContent = '100+ days — legend 🚀';

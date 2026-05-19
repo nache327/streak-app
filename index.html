@@ -59,6 +59,17 @@
       <button class="mode-btn active" id="mode-btn-do">✓ DO daily<br><span style="font-size:0.75rem;opacity:0.75;">e.g. Exercise</span></button>
       <button class="mode-btn" id="mode-btn-avoid">✕ AVOID daily<br><span style="font-size:0.75rem;opacity:0.75;">e.g. No junk food</span></button>
     </div>
+    <div class="mode-toggle-label">How often?</div>
+    <div class="freq-toggle">
+      <button class="freq-btn active" id="freq-btn-daily" data-freq="daily">Every day</button>
+      <button class="freq-btn" id="freq-btn-weekly" data-freq="weekly_target">Some days a week</button>
+    </div>
+    <div class="target-row" id="weekly-target-row" style="display:none;">
+      <button class="target-btn" data-target="3">3</button>
+      <button class="target-btn" data-target="4">4</button>
+      <button class="target-btn active" data-target="5">5</button>
+      <button class="target-btn" data-target="6">6</button>
+    </div>
     <button class="btn-primary">Start Tracking</button>
   </div>
 </div>
@@ -86,6 +97,13 @@
     <button class="nav-btn"        data-screen="stats">Stats</button>
     <button class="nav-btn"        data-screen="badges">Badges</button>
     <button class="nav-btn"        data-screen="settings">Settings</button>
+  </div>
+
+  <!-- WELCOME-BACK BANNER (returning after 3+ day gap) -->
+  <div id="welcome-banner">
+    <button class="wb-dismiss" id="welcome-dismiss">✕</button>
+    <div class="wb-title">Welcome back.</div>
+    <div class="wb-sub">Take today. The past is past.</div>
   </div>
 
   <!-- NOTIFICATION BANNER (Android / desktop) -->
@@ -199,12 +217,19 @@
           <div class="stat-card-lbl">Total Wins</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card-val fail" id="stat-fails">0</div>
-          <div class="stat-card-lbl">Misses</div>
+          <div class="stat-card-val success" id="stat-wins-month">0</div>
+          <div class="stat-card-lbl">Wins this Month</div>
         </div>
         <div class="stat-card full">
           <div class="stat-card-val accent" id="stat-rate">—</div>
           <div class="stat-card-lbl">Success Rate</div>
+        </div>
+        <div class="stat-card full" style="display:flex;justify-content:space-between;align-items:baseline;">
+          <div>
+            <div class="stat-card-val" id="stat-fails" style="font-size:1.2rem;color:var(--muted);">0</div>
+            <div class="stat-card-lbl">Off Days</div>
+          </div>
+          <div style="font-size:0.72rem;color:var(--muted);max-width:60%;text-align:right;line-height:1.4;">Days happen. The streak is what matters.</div>
         </div>
         <div class="stat-card full">
           <div class="stat-card-val accent" id="stat-next-val">—</div>
@@ -227,9 +252,14 @@
     </div>
 
     <div class="settings-section">
+      <div class="settings-label">Schedule</div>
+      <div id="settings-schedule"></div>
+    </div>
+
+    <div class="settings-section">
       <div class="settings-label">Rename Goal</div>
       <input class="settings-input" id="rename-input" type="text" />
-      <button class="btn-outline">Save Name</button>
+      <button class="btn-outline" id="btn-rename-goal">Save Name</button>
     </div>
 
     <div class="settings-section">
@@ -245,8 +275,8 @@
     <div class="settings-section">
       <div class="settings-label">Data</div>
       <div style="font-size:0.78rem;color:var(--sub);margin-bottom:0.8rem;line-height:1.6;">Back up your streak data or restore it on a new device.</div>
-      <button class="btn-outline">Export JSON Backup</button>
-      <button class="btn-outline">Import JSON Backup</button>
+      <button class="btn-outline" id="btn-export-data">Export JSON Backup</button>
+      <button class="btn-outline" id="btn-import-data">Import JSON Backup</button>
       <input type="file" id="import-file" accept=".json" style="display:none" />
     </div>
 

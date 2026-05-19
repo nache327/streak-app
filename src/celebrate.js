@@ -25,7 +25,7 @@ export function launchConfetti() {
     y: Math.random() * -canvas.height * 0.5,
     vx: (Math.random() - 0.5) * 6,
     vy: Math.random() * 4 + 1,
-    color: ['#e8f55a','#4dff91','#ff4d4d','#fff','#ffb347','#a78bfa','#38bdf8'][Math.floor(Math.random()*7)],
+    color: ['#e8f55a','#4dff91','#fff','#ffb347','#a78bfa','#38bdf8'][Math.floor(Math.random()*6)],
     size: Math.random() * 10 + 5,
     rot: Math.random() * 360,
     rspeed: (Math.random() - 0.5) * 10,

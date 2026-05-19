@@ -38,6 +38,7 @@ export function createFreshState(goal, mode, goalType, weeklyTarget) {
     ],
     freezesEarned: 0,
     freezesUsed: 0,
+    weeklyFreezesByWeek: {},
     isPro: false,
     biometricLockEnabled: false,
     hideGoalName: false,
@@ -56,6 +57,7 @@ export function migrate(data) {
   if (data.weeklyTarget === undefined) data.weeklyTarget = 5;
   if (data.freezesEarned === undefined) data.freezesEarned = 0;
   if (data.freezesUsed === undefined) data.freezesUsed = 0;
+  if (data.weeklyFreezesByWeek === undefined) data.weeklyFreezesByWeek = {};
   if (data.isPro === undefined) data.isPro = false;
   if (data.biometricLockEnabled === undefined) data.biometricLockEnabled = false;
   if (data.hideGoalName === undefined) data.hideGoalName = false;

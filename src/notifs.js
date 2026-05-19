@@ -252,9 +252,10 @@ export function _fireReminders(timeMatcher) {
   if (!appData.reminders.some(r => r.enabled)) return;
   const today = todayStr();
   const checkedInToday = !!appData.entries[today];
+  // Generic, supportive copy — never includes the goal name (privacy + softer pressure).
   const messages = {
-    morning: `Good morning! Stay strong today — keep your ${appData.goal} streak alive. 🔥`,
-    evening: `Don't forget to log your day! Did you stick with ${appData.goal}? ✅`,
+    morning: 'Good morning. Take today when you have a minute.',
+    evening: 'Quick check-in when you have a minute.',
   };
   appData.reminders.forEach(r => {
     if (!r.enabled) return;
@@ -263,7 +264,7 @@ export function _fireReminders(timeMatcher) {
     if (_reminderFiredDates[key]) return;
     if (!timeMatcher(r)) return;
     _reminderFiredDates[key] = true;
-    new Notification('Streak Reminder', { body: messages[r.id] || `Time to check in on your ${appData.goal} streak! ✨` });
+    new Notification('Streak', { body: messages[r.id] || 'Quick check-in when you have a minute.' });
   });
 }
 

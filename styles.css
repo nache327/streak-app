@@ -389,7 +389,7 @@
     }
 
     .week-dot.yes { background: var(--success); border-color: var(--success); }
-    .week-dot.no  { background: var(--fail);    border-color: var(--fail); }
+    .week-dot.no  { background: var(--surface); border: 1px dashed var(--muted); }
     .week-dot.today { border-color: var(--accent); border-width: 2px; }
 
     /* check-in buttons */
@@ -498,7 +498,7 @@
     .cal-cell:hover { border-color: var(--muted); }
     .cal-cell.empty { background: none; border-color: transparent; cursor: default; }
     .cal-cell.yes { background: var(--success); border-color: var(--success); color: #0a0a0a; font-weight: 700; }
-    .cal-cell.no  { background: var(--fail);    border-color: var(--fail);    color: #fff;    font-weight: 700; }
+    .cal-cell.no  { background: var(--surface); border: 1px dashed var(--muted); color: var(--muted); }
     .cal-cell.unlogged { border-style: dashed; border-color: var(--muted); color: var(--muted); }
     .cal-cell.today { border-color: var(--accent); border-width: 2px; }
     .cal-cell.future { opacity: 0.2; cursor: default; }
@@ -571,7 +571,7 @@
     }
 
     .chart-bar.yes { background: var(--success); }
-    .chart-bar.no  { background: var(--fail); }
+    .chart-bar.no  { background: var(--muted); }
     .chart-bar.empty { background: var(--border); }
 
     /* â”€â”€ SETTINGS â”€â”€ */
@@ -1309,3 +1309,75 @@
 
     /* â”€â”€ UTILITY â”€â”€ */
     .hidden { display: none !important; }
+
+    /* ── FREQUENCY (onboarding + settings Schedule) ── */
+    .freq-toggle, .target-row {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+    }
+    .freq-btn, .target-btn {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0.7rem 0.4rem;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    .freq-btn { padding: 1rem 0.4rem; }
+    .freq-btn.active, .target-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a0a0a;
+      font-weight: 700;
+    }
+    .target-row { margin-top: 0.6rem; }
+
+    /* ── WELCOME-BACK BANNER ── */
+    #welcome-banner {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.9rem 1.1rem;
+      margin: 0.6rem 1.4rem 0;
+      color: var(--text);
+      position: relative;
+    }
+    #welcome-banner.show { display: block; }
+    #welcome-banner .wb-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      margin-bottom: 0.2rem;
+    }
+    #welcome-banner .wb-sub {
+      font-size: 0.82rem;
+      color: var(--sub);
+      line-height: 1.5;
+    }
+    #welcome-banner .wb-dismiss {
+      position: absolute;
+      top: 0.4rem;
+      right: 0.5rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 0.3rem 0.5rem;
+    }
+
+    /* ── FREEZE INDICATOR ── */
+    .freeze-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      color: var(--sub);
+      margin-left: 0.4rem;
+    }

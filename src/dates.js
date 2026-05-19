@@ -26,3 +26,34 @@ export function addDays(str, n) {
   d.setDate(d.getDate() + n);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
+function fmt(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Mon-Sun weeks. Returns the Monday-date string for the week containing `str`.
+export function weekStart(str) {
+  const d = parseDate(str);
+  const dow = d.getDay(); // 0=Sun..6=Sat
+  const shift = dow === 0 ? -6 : 1 - dow;
+  d.setDate(d.getDate() + shift);
+  return fmt(d);
+}
+
+export function weekEnd(str) {
+  return addDays(weekStart(str), 6);
+}
+
+// All Monday-start week keys covered by the entry date range, oldest first.
+export function listWeeksCovering(dateStrs) {
+  if (!dateStrs.length) return [];
+  const first = weekStart(dateStrs[0]);
+  const last = weekStart(dateStrs[dateStrs.length - 1]);
+  const weeks = [];
+  let cur = first;
+  while (cur <= last) {
+    weeks.push(cur);
+    cur = addDays(cur, 7);
+  }
+  return weeks;
+}
