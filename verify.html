@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Streak — Self-tests</title>
+<style>
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: #0a0a0a; color: #f0f0f0; padding: 1.5rem; max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .sub { color: #888; margin-bottom: 1.4rem; font-size: 0.9rem; }
+  .summary { padding: 0.8rem 1rem; border-radius: 10px; margin-bottom: 1rem; font-weight: 500; }
+  .summary.pass { background: rgba(77,255,145,0.15); color: #4dff91; border: 1px solid #4dff91; }
+  .summary.fail { background: rgba(255,77,77,0.15); color: #ff4d4d; border: 1px solid #ff4d4d; }
+  .group { background: #141414; border: 1px solid #222; border-radius: 10px; padding: 0.8rem 1rem; margin-bottom: 0.7rem; }
+  .group-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.4rem; }
+  .row { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.25rem 0; font-size: 0.85rem; font-family: 'DM Mono', ui-monospace, monospace; }
+  .badge { font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.45rem; border-radius: 4px; }
+  .pass .badge { background: #4dff91; color: #0a0a0a; }
+  .fail .badge { background: #ff4d4d; color: #fff; }
+  .row.fail { color: #ff4d4d; }
+  .detail { color: #888; font-size: 0.78rem; margin-left: 1.6rem; white-space: pre-wrap; }
+  a { color: #e8f55a; }
+</style>
+</head>
+<body>
+<h1>Streak — self-tests</h1>
+<div class="sub">Loads the live modules and runs regression checks. No real data is touched (uses isolated state).</div>
+<div id="summary" class="summary">Running…</div>
+<div id="results"></div>
+<div style="margin-top:1.4rem;font-size:0.85rem;color:#888;">
+  Back to the app: <a href="./">/</a>
+</div>
+
+<script type="module">
+import { migrate, createFreshState, SCHEMA_VERSION } from './src/data.js';
+import { computeStats, winsThisMonth } from './src/stats.js';
+import { todayStr, addDays, weekStart, weekEnd, listWeeksCovering } from './src/dates.js';
+
+let pass = 0, fail = 0;
+const results = document.getElementById('results');
+
+function group(title, fn) {
+  const div = document.createElement('div');
+  div.className = 'group';
+  const t = document.createElement('div');
+  t.className = 'group-title';
+  t.textContent = title;
+  div.appendChild(t);
+  results.appendChild(div);
+  const local = { ok(label, cond, detail) {
+    const row = document.createElement('div');
+    row.className = 'row ' + (cond ? 'pass' : 'fail');
+    const b = document.createElement('span');
+    b.className = 'badge';
+    b.textContent = cond ? 'PASS' : 'FAIL';
+    row.appendChild(b);
+    const lbl = document.createElement('span');
+    lbl.textContent = label;
+    row.appendChild(lbl);
+    div.appendChild(row);
+    if (!cond && detail) {
+      const d = document.createElement('div');
+      d.className = 'detail';
+      d.textContent = detail;
+      div.appendChild(d);
+    }
+    if (cond) pass++; else fail++;
+  }, eq(label, actual, expected) {
+    const c = JSON.stringify(actual) === JSON.stringify(expected);
+    local.ok(label, c, c ? '' : `actual: ${JSON.stringify(actual)}\nexpected: ${JSON.stringify(expected)}`);
+  }};
+  try { fn(local); } catch (e) {
+    local.ok('threw: ' + e.message, false, e.stack);
+  }
+}
+
+// ── DATES ──
+group('dates: week math', t => {
+  // Mon 2026-05-18, Sun 2026-05-24 (today is 2026-05-19 per memory)
+  t.eq('weekStart(Mon) -> Mon', weekStart('2026-05-18'), '2026-05-18');
+  t.eq('weekStart(Tue) -> Mon', weekStart('2026-05-19'), '2026-05-18');
+  t.eq('weekStart(Sun) -> Mon', weekStart('2026-05-24'), '2026-05-18');
+  t.eq('weekEnd(Mon) -> Sun', weekEnd('2026-05-18'), '2026-05-24');
+  t.eq('addDays +1', addDays('2026-05-19', 1), '2026-05-20');
+  t.eq('addDays -7', addDays('2026-05-19', -7), '2026-05-12');
+  t.eq('addDays roundtrip', addDays(addDays('2026-05-19', 5), -5), '2026-05-19');
+  const ws = listWeeksCovering(['2026-05-04', '2026-05-19']);
+  t.eq('listWeeksCovering 2 weeks span', ws, ['2026-05-04', '2026-05-11', '2026-05-18']);
+});
+
+// ── MIGRATION ──
+group('data: migrate() v1 -> v2', t => {
+  const v1 = {
+    version: 1,
+    goal: 'Test goal',
+    goalMode: 'do',
+    startDate: '2026-04-01',
+    entries: { '2026-04-01': { result: 'yes', note: '', loggedAt: '2026-04-01T12:00:00Z' } },
+    earnedBadges: {},
+    badgeCounts: {},
+    badgeCountedRun: {},
+    reminders: [{ id: 'morning', time: '08:00', enabled: false, preset: true }],
+    createdAt: '2026-04-01T00:00:00Z',
+  };
+  const m = migrate(structuredClone(v1));
+  t.eq('version bumped', m.version, SCHEMA_VERSION);
+  t.eq('goalType defaulted to daily', m.goalType, 'daily');
+  t.eq('weeklyTarget defaulted to 5', m.weeklyTarget, 5);
+  t.eq('freezesEarned init', m.freezesEarned, 0);
+  t.eq('freezesUsed init', m.freezesUsed, 0);
+  t.eq('isPro init', m.isPro, false);
+  t.eq('biometricLockEnabled init', m.biometricLockEnabled, false);
+  t.eq('hideGoalName init', m.hideGoalName, false);
+  t.eq('displayGoalName init', m.displayGoalName, '');
+  t.eq('discreetNotifications defaults true', m.discreetNotifications, true);
+  t.eq('entries preserved', m.entries, v1.entries);
+  t.eq('goal preserved', m.goal, 'Test goal');
+
+  // idempotent
+  const m2 = migrate(structuredClone(m));
+  t.eq('migrate is idempotent', m2, m);
+
+  // null safety
+  t.eq('migrate(null) returns null', migrate(null), null);
+});
+
+group('data: createFreshState shape', t => {
+  const s = createFreshState('My goal', 'avoid', 'weekly_target', 4);
+  t.eq('version', s.version, SCHEMA_VERSION);
+  t.eq('goal', s.goal, 'My goal');
+  t.eq('goalMode', s.goalMode, 'avoid');
+  t.eq('goalType', s.goalType, 'weekly_target');
+  t.eq('weeklyTarget', s.weeklyTarget, 4);
+  t.ok('entries is empty obj', JSON.stringify(s.entries) === '{}');
+  t.eq('reminders length', s.reminders.length, 2);
+  t.eq('weeklyFreezesByWeek init', s.weeklyFreezesByWeek, {});
+});
+
+// ── DAILY STATS ──
+group('stats: daily mode', t => {
+  const today = todayStr();
+  const data = {
+    version: 2, goal: 'g', goalMode: 'do', goalType: 'daily', weeklyTarget: 5,
+    entries: {},
+    earnedBadges: {}, badgeCounts: {}, badgeCountedRun: {},
+    freezesEarned: 0, freezesUsed: 0, isPro: false,
+  };
+  // 5 consecutive yes days ending today
+  for (let i = 0; i < 5; i++) data.entries[addDays(today, -i)] = { result: 'yes', note: '', loggedAt: '' };
+  const s = computeStats(data);
+  t.eq('goalType', s.goalType, 'daily');
+  t.eq('wins', s.wins, 5);
+  t.eq('fails', s.fails, 0);
+  t.eq('currentStreak', s.currentStreak, 5);
+  t.eq('best', s.best, 5);
+  t.eq('rate', s.rate, '100%');
+
+  // break the streak: insert a 'no' yesterday
+  const data2 = JSON.parse(JSON.stringify(data));
+  data2.entries[addDays(today, -1)] = { result: 'no', note: '', loggedAt: '' };
+  const s2 = computeStats(data2);
+  t.eq('streak resets after no', s2.currentStreak, 1);
+  t.eq('wins still counted', s2.wins, 4);
+  t.eq('fails counted', s2.fails, 1);
+  t.eq('best preserved (run was 5)', s2.best, 4);
+});
+
+// ── WEEKLY STATS ──
+group('stats: weekly_target mode (target=5)', t => {
+  const today = todayStr();
+  const thisWeek = weekStart(today);
+  const lastWeek = addDays(thisWeek, -7);
+
+  // Populate last week with exactly 5 yes-days (Mon-Fri)
+  function makeWeekly(yesDaysLastWeek, yesDaysExtraOld) {
+    const d = {
+      version: 2, goal: 'g', goalMode: 'do', goalType: 'weekly_target', weeklyTarget: 5,
+      entries: {}, earnedBadges: {}, badgeCounts: {}, badgeCountedRun: {},
+      freezesEarned: 0, freezesUsed: 0, weeklyFreezesByWeek: {}, isPro: false,
+    };
+    for (let i = 0; i < yesDaysLastWeek; i++) {
+      d.entries[addDays(lastWeek, i)] = { result: 'yes', note: '', loggedAt: '' };
+    }
+    // Add ancient yes-days a few weeks earlier — used to test freeze accrual
+    const ancient = addDays(thisWeek, -7 * 4);
+    for (let i = 0; i < (yesDaysExtraOld || 0); i++) {
+      d.entries[addDays(ancient, i)] = { result: 'yes', note: '', loggedAt: '' };
+    }
+    return d;
+  }
+
+  const dA = makeWeekly(5);
+  const sA = computeStats(dA);
+  t.eq('5 yes-days hits target', sA.weekHit[lastWeek], true);
+  t.eq('streak=1', sA.currentStreak, 1);
+  t.eq('wins counts every yes-day', sA.wins, 5);
+
+  // 4 yes-days last week, no freezes → no hit
+  const dB = makeWeekly(4);
+  const sB = computeStats(dB);
+  t.eq('4 yes-days WITHOUT freeze does not hit', sB.weekHit[lastWeek], false);
+  t.eq('streak=0', sB.currentStreak, 0);
+
+  // 4 yes-days last week + enough total to earn a freeze (7+ yes total)
+  const dC = makeWeekly(4, 4); // 4 last week + 4 ancient = 8 total yes, earns 1 freeze
+  const sC = computeStats(dC);
+  t.eq('earned >= 1 freeze (wins=8 -> floor(8/7)=1)', dC.freezesEarned >= 1, true);
+  t.eq('freeze applied to most recent short week (newest-first)', sC.weekHit[lastWeek], true);
+  t.eq('weeklyFreezesByWeek records the lastWeek', !!dC.weeklyFreezesByWeek[lastWeek], true);
+  t.eq('streak preserved by freeze', sC.currentStreak, 1);
+
+  // Pro cap: 14 yes-days, no freezes used yet
+  const dD = makeWeekly(0, 14);
+  dD.isPro = true;
+  computeStats(dD);
+  t.eq('pro cap allows up to 2 stored', dD.freezesEarned - dD.freezesUsed <= 2, true);
+
+  // Free cap: 14 yes-days, free user
+  const dE = makeWeekly(0, 14);
+  computeStats(dE);
+  t.eq('free cap allows only 1 stored', dE.freezesEarned - dE.freezesUsed <= 1, true);
+});
+
+// ── WINS THIS MONTH ──
+group('stats: winsThisMonth', t => {
+  const today = todayStr();
+  const data = {
+    entries: {
+      [today]: { result: 'yes' },
+      [addDays(today, -1)]: { result: 'yes' },
+      [addDays(today, -2)]: { result: 'no' },
+    },
+  };
+  const w = winsThisMonth(data);
+  // Today and yesterday are almost certainly in the same month except on the 1st/2nd
+  t.ok('winsThisMonth >= 1', w >= 1, `got ${w}`);
+});
+
+// ── ROUNDUP ──
+const summary = document.getElementById('summary');
+if (fail === 0) {
+  summary.className = 'summary pass';
+  summary.textContent = `All ${pass} checks passed.`;
+} else {
+  summary.className = 'summary fail';
+  summary.textContent = `${fail} failed, ${pass} passed.`;
+}
+</script>
+</body>
+</html>

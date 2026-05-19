@@ -84,12 +84,15 @@ function computeWeeklyStats(data) {
   // Evaluate hits, applying freezes if user fell 1 short.
   // We mutate `data` for freezesUsed because applying a freeze is a real
   // consumption — record which weeks consumed one (persisted so it's stable).
+  // Iterate newest-first so freezes preferentially protect the most recent
+  // weeks (which matter most for the current streak).
   if (!data.weeklyFreezesByWeek) data.weeklyFreezesByWeek = {};
   let freezesAvailable = data.freezesEarned - data.freezesUsed;
   const weekHit = Object.create(null);
   const thisWeek = weekStart(today);
   let dataChanged = false;
-  for (const w of weekKeys) {
+  for (let i = weekKeys.length - 1; i >= 0; i--) {
+    const w = weekKeys[i];
     const yc = weekYesCount[w];
     const naturallyHit = yc >= target;
     const wasFrozen = !!data.weeklyFreezesByWeek[w];
