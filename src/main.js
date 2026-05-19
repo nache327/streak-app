@@ -99,14 +99,17 @@ function bindEvents() {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => showScreen(btn.dataset.screen));
   });
-  document.getElementById('cal-prev').addEventListener('click', () => {
-    state.calViewDate.setMonth(state.calViewDate.getMonth() - 1);
-    renderCalendar();
-  });
-  document.getElementById('cal-next').addEventListener('click', () => {
-    state.calViewDate.setMonth(state.calViewDate.getMonth() + 1);
-    renderCalendar();
-  });
+  if (!bindEvents._calNavBound) {
+    bindEvents._calNavBound = true;
+    document.getElementById('cal-prev').addEventListener('click', () => {
+      state.calViewDate.setMonth(state.calViewDate.getMonth() - 1);
+      renderCalendar();
+    });
+    document.getElementById('cal-next').addEventListener('click', () => {
+      state.calViewDate.setMonth(state.calViewDate.getMonth() + 1);
+      renderCalendar();
+    });
+  }
   if (!bindEvents._visibilityBound) {
     bindEvents._visibilityBound = true;
     document.addEventListener('visibilitychange', () => {
@@ -151,11 +154,5 @@ if (data) {
 }
 
 if ('serviceWorker' in navigator) {
-  // Unregister stale sw.js — OneSignalSDKWorker.js is now the single service worker
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    regs.forEach(r => {
-      if (r.active && !r.active.scriptURL.includes('OneSignalSDKWorker.js')) r.unregister();
-    });
-  });
   navigator.serviceWorker.register('./OneSignalSDKWorker.js').catch(() => {});
 }

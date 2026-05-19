@@ -9,6 +9,7 @@ import { checkBadgesForStreak } from './badges.js';
 import { showMilestoneBanner, launchConfetti } from './celebrate.js';
 import { renderDashboard } from './render/dashboard.js';
 import { initNotifBanners } from './notifs.js';
+import { openModal } from './modal.js';
 
 export function logDay(result) {
   const appData = state.appData;
@@ -47,12 +48,10 @@ export function logDay(result) {
   }
 }
 
+// Opens the day-edit modal pre-filled with today's data so the user can change
+// result or note without losing the original loggedAt timestamp.
 export function editTodayInline() {
-  const appData = state.appData;
-  const today = todayStr();
-  delete appData.entries[today];
-  saveData(appData);
-  renderDashboard();
+  openModal(todayStr());
 }
 
 export function getMotivationLine(s) {

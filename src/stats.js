@@ -17,7 +17,6 @@ export function computeStats(data) {
   }
 
   // personal best
-  let prevResult = null;
   for (const d of days) {
     if (entries[d].result === 'yes') {
       run++;
