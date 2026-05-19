@@ -155,16 +155,22 @@ function bindEvents() {
   }
   if (!bindEvents._visibilityBound) {
     bindEvents._visibilityBound = true;
-    document.addEventListener('visibilitychange', () => {
+    // visibilitychange fires when the tab itself is hidden (other tab, window
+    // minimized). pagehide fires when iOS Safari moves the PWA to background
+    // — which is when iOS takes the app-switcher snapshot. Both add the blur.
+    const setBlur = on => {
       const appEl = document.getElementById('app');
-      if (document.visibilityState === 'hidden') {
-        // Background blur — protects iOS app-switcher screenshots. Default-on.
-        if (appEl) appEl.classList.add('app-blurred');
-      } else {
-        if (appEl) appEl.classList.remove('app-blurred');
-        checkMissedReminders();
-      }
+      if (!appEl) return;
+      if (on) appEl.classList.add('app-blurred');
+      else appEl.classList.remove('app-blurred');
+    };
+    document.addEventListener('visibilitychange', () => {
+      const hidden = document.visibilityState === 'hidden';
+      setBlur(hidden);
+      if (!hidden) checkMissedReminders();
     });
+    window.addEventListener('pagehide', () => setBlur(true));
+    window.addEventListener('pageshow', () => setBlur(false));
   }
 }
 
