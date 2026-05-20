@@ -267,7 +267,7 @@ export function _fireReminders(timeMatcher) {
     if (_reminderFiredDates[key]) return;
     if (!timeMatcher(r)) return;
     _reminderFiredDates[key] = true;
-    new Notification('Streak', { body: messages[r.id] || 'Quick check-in when you have a minute.' });
+    new Notification('Ground', { body: messages[r.id] || 'Quick check-in when you have a minute.' });
   });
 }
 

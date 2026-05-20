@@ -1,5 +1,5 @@
 /**
- * Streak App — Daily Reminder Worker
+ * Ground — Daily Reminder Worker
  *
  * Deploys to Cloudflare Workers (free tier).
  * Cron trigger: "0 0 * * *" (runs midnight UTC every day)
@@ -19,7 +19,7 @@ export default {
       await sendDailyReminders(env);
       return new Response('Reminders sent', { status: 200 });
     }
-    return new Response('Streak Reminder Worker is running.', { status: 200 });
+    return new Response('Ground Reminder Worker is running.', { status: 200 });
   },
 
   // Cron handler — fires every day at midnight UTC

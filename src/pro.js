@@ -13,7 +13,7 @@ export function isPro() {
 const PROMPT_COPY = {
   '7-day-milestone': {
     title: "You've made it a week",
-    body: 'Lock in your progress and unlock full history, exports, and custom reminders with Streak Pro.',
+    body: 'Lock in your progress and unlock full history, exports, and custom reminders with Ground Pro.',
   },
   'calendar-history': {
     title: 'Pro unlocks your full history',
@@ -21,11 +21,11 @@ const PROMPT_COPY = {
   },
   'export': {
     title: 'Export is a Pro feature',
-    body: 'Back up and restore your data anywhere with Streak Pro.',
+    body: 'Back up and restore your data anywhere with Ground Pro.',
   },
   'import': {
     title: 'Import is a Pro feature',
-    body: 'Restore from a JSON backup with Streak Pro.',
+    body: 'Restore from a JSON backup with Ground Pro.',
   },
   'custom-reminder': {
     title: 'Custom reminders are Pro',
