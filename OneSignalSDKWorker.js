@@ -2,7 +2,7 @@
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 
 // PWA cache
-const CACHE = 'ground-v1';
+const CACHE = 'ground-v2';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './ground_logo.png'])));
