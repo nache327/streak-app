@@ -214,17 +214,11 @@ topbar 7 times within 3 seconds.
 - Adding custom reminders (free has the two presets only)
 - A second stored streak freeze (free caps at 1)
 
-**Free forever**:
-
-- Daily check-in, current + best streak, last 7 days strip, last 30 days
-- 30-day trend chart and all stats cards
-- Both modes (do/avoid) and both types (daily/weekly_target)
-- One stored streak freeze (weekly mode)
-- The full 4-stage sprout progression
-- All privacy features (PIN lock, hide goal name, discreet notifications)
-- Both preset reminders (morning + evening)
-- Milestones, badges, confetti
-- Goal renaming, dark theme, reflection notes
+**Free forever**: daily check-in, current/best streak, 7-day strip, last
+30 days calendar, 30-day trend chart, all stats cards, both modes and both
+types, one stored freeze, the full 4-stage sprout progression, all privacy
+features, both preset reminders, milestones / badges / confetti, goal
+renaming, dark theme, reflection notes.
 
 ## Design system
 
@@ -302,6 +296,4 @@ Hit it on any device after deploying to confirm the model layer is green.
   not a primary channel.
 - Service worker cache is install-time; new shell assets land after a reload.
 
-## License
-
-Private. No license granted.
+## License — Private. No license granted.
