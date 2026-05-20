@@ -2,10 +2,17 @@
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 
 // PWA cache
-const CACHE = 'ground-v2';
+const CACHE = 'ground-v3';
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './ground_logo.png'])));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll([
+    './',
+    './ground_logo.png',
+    './ground_stage_1.png',
+    './ground_stage_2.png',
+    './ground_stage_3.png',
+    './ground_stage_4.png',
+  ])));
   self.skipWaiting();
 });
 

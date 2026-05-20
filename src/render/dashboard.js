@@ -2,16 +2,15 @@ import { state, getModeLabels } from '../state.js';
 import { computeStats } from '../stats.js';
 import { todayStr, addDays, dayOfWeek } from '../dates.js';
 import { getMotivationLine } from '../checkin.js';
+import { getStageForStreak } from '../constants.js';
 
 function maybeShowWelcomeBack(appData, s) {
   const banner = document.getElementById('welcome-banner');
   if (!banner) return;
-  // Suppress if user has already seen it for the current absence.
   if (s.currentStreak > 0) { banner.classList.remove('show'); return; }
   const days = Object.keys(appData.entries).sort();
   if (days.length === 0) { banner.classList.remove('show'); return; }
   const lastEntry = days[days.length - 1];
-  // Days between last entry and today.
   const a = new Date(lastEntry), b = new Date(todayStr());
   const gap = Math.floor((b - a) / 86400000);
   if (gap < 3) { banner.classList.remove('show'); return; }
@@ -20,7 +19,38 @@ function maybeShowWelcomeBack(appData, s) {
   banner.dataset.lastEntry = lastEntry;
 }
 
-export function renderDashboard() {
+// Updates the sprout image. When `animate` is true and the stage actually
+// changes, a 450ms opacity cross-fade plays between old and new. Otherwise
+// the src swap is instant (boot, screen restore).
+export function setSprout(stage, animate) {
+  const img = document.getElementById('streak-sprout');
+  if (!img) return;
+  const current = parseInt(img.dataset.stage || '0');
+  if (current === stage) return;
+  const newSrc = `ground_stage_${stage}.png`;
+  img.dataset.stage = String(stage);
+  if (!animate || current === 0) {
+    img.src = newSrc;
+    return;
+  }
+  img.classList.add('fading');
+  const onEnd = () => {
+    img.removeEventListener('transitionend', onEnd);
+    img.src = newSrc;
+    requestAnimationFrame(() => img.classList.remove('fading'));
+  };
+  img.addEventListener('transitionend', onEnd);
+}
+
+// Exposes "is the dashboard's current sprout less than this stage?" so the
+// check-in and modal-save paths can decide whether to fire confetti before
+// they trigger a re-render that updates the dataset.stage.
+export function currentSproutStage() {
+  const img = document.getElementById('streak-sprout');
+  return img ? parseInt(img.dataset.stage || '0') : 0;
+}
+
+export function renderDashboard(opts = {}) {
   const appData = state.appData;
   const s = computeStats(appData);
   const today = todayStr();
@@ -32,11 +62,13 @@ export function renderDashboard() {
   document.getElementById('dash-wins').textContent = s.wins;
   document.getElementById('dash-rate').textContent = s.rate;
 
-  // Days vs Weeks label depending on goal type.
   const unitEl = document.querySelector('.streak-unit');
   if (unitEl) unitEl.textContent = s.goalType === 'weekly_target' ? 'weeks' : 'days';
 
   maybeShowWelcomeBack(appData, s);
+
+  // Sprout — animate when called from a check-in/save path that flagged it.
+  setSprout(getStageForStreak(s), !!opts.animateSprout);
 
   const unit = s.goalType === 'weekly_target' ? 'week' : 'day';
   const toGo = s.best > s.currentStreak ? s.best - s.currentStreak : 1;
@@ -48,18 +80,11 @@ export function renderDashboard() {
     document.getElementById('dash-target').innerHTML = `<span>${toGo}</span> ${unit}${toGo !== 1 ? 's' : ''} to beat your best`;
   }
 
-  // Streak progress ring
-  const ringMilestones = [1, 3, 7, 14, 21, 30, 50, 100];
-  const nextM = ringMilestones.find(m => m > s.currentStreak) || (s.currentStreak + 1);
-  const prevM = [...ringMilestones].reverse().find(m => m < s.currentStreak) || 0;
-  const ringPct = s.currentStreak === 0 ? 0 : Math.min(1, (s.currentStreak - prevM) / (nextM - prevM));
-  const circumference = 553;
-  const ringFill = document.getElementById('streak-ring-fill');
-  if (ringFill) ringFill.style.strokeDashoffset = circumference * (1 - ringPct);
   const milestoneLabel = document.getElementById('streak-milestone-label');
   if (milestoneLabel) {
+    const ringMilestones = [1, 3, 7, 14, 21, 30, 50, 100];
+    const nextM = ringMilestones.find(m => m > s.currentStreak) || (s.currentStreak + 1);
     if (s.goalType === 'weekly_target') {
-      // Day-based milestones don't translate cleanly to weekly mode; hide.
       milestoneLabel.textContent = '';
     } else if (s.currentStreak === 0) {
       milestoneLabel.textContent = '';
@@ -70,11 +95,9 @@ export function renderDashboard() {
     }
   }
 
-  // Motivation line
   const motivEl = document.getElementById('streak-motivation');
   if (motivEl) motivEl.textContent = getMotivationLine(s);
 
-  // 7-day strip
   const strip = document.getElementById('week-strip');
   strip.innerHTML = '';
   for (let i = 6; i >= 0; i--) {
@@ -92,7 +115,6 @@ export function renderDashboard() {
     strip.appendChild(el);
   }
 
-  // Check-in state
   const labels = getModeLabels();
   const todayEntry = appData.entries[today];
   const qEl = document.getElementById('checkin-question');

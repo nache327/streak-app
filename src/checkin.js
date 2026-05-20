@@ -3,11 +3,11 @@ import { state } from './state.js';
 import { saveData } from './data.js';
 import { todayStr } from './dates.js';
 import { computeStats } from './stats.js';
-import { MILESTONES } from './constants.js';
+import { MILESTONES, getStageForStreak } from './constants.js';
 import { showToast } from './toast.js';
 import { checkBadgesForStreak } from './badges.js';
 import { showMilestoneBanner, launchConfetti } from './celebrate.js';
-import { renderDashboard } from './render/dashboard.js';
+import { renderDashboard, currentSproutStage } from './render/dashboard.js';
 import { initNotifBanners } from './notifs.js';
 import { openModal } from './modal.js';
 
@@ -22,27 +22,31 @@ export function logDay(result) {
     loggedAt: new Date().toISOString(),
   };
   saveData(appData);
-  renderDashboard();
+
+  // Detect sprout stage upgrade BEFORE re-rendering (renderDashboard mutates
+  // the img's data-stage). Stage upgrade = ambient reward; confetti below.
+  const sBefore = computeStats(appData);
+  const prevStage = currentSproutStage();
+  const newStage = getStageForStreak(sBefore);
+  const sproutUpgraded = result === 'yes' && newStage > prevStage && prevStage > 0;
+
+  renderDashboard({ animateSprout: result === 'yes' });
   showToast(result === 'yes' ? '✓ Logged — great work!' : 'Logged. Tomorrow is a new day.');
 
   if (result === 'yes') {
-    // Flash celebration
     const screen = document.getElementById('screen-dashboard');
     screen.classList.remove('yes-flash');
-    void screen.offsetWidth; // reflow to restart animation
+    void screen.offsetWidth;
     screen.classList.add('yes-flash');
 
-    const s = computeStats(appData);
-    // Mark the start of a new streak run so badge repeat counts increment once per run
-    const isNewBest = s.currentStreak > 0 && s.currentStreak === s.best && s.currentStreak > 1;
-    if (isNewBest) launchConfetti();
-    const newBadge = checkBadgesForStreak(s.currentStreak, true);
-    if (!newBadge && MILESTONES.includes(s.currentStreak)) {
-      showMilestoneBanner(s.currentStreak);
+    const isNewBest = sBefore.currentStreak > 0 && sBefore.currentStreak === sBefore.best && sBefore.currentStreak > 1;
+    if (isNewBest || sproutUpgraded) launchConfetti();
+    const newBadge = checkBadgesForStreak(sBefore.currentStreak, true);
+    if (!newBadge && MILESTONES.includes(sBefore.currentStreak)) {
+      showMilestoneBanner(sBefore.currentStreak);
     }
   }
 
-  // Show reminder banner after the first logged day
   if (isFirstEver) {
     setTimeout(() => initNotifBanners(), 1800);
   }

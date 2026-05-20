@@ -184,7 +184,36 @@ function startApp() {
     state._onboardWeeklyTarget
   );
   saveData(state.appData);
-  bootApp();
+  playOnboardFlourish().then(bootApp);
+}
+
+// 3-second sprout intro shown once after the user clicks Start Tracking.
+// Cycles stages 1->2->3->4 then dismisses. Tap anywhere to skip.
+function playOnboardFlourish() {
+  return new Promise(resolve => {
+    const flourish = document.getElementById('onboard-flourish');
+    const img = document.getElementById('flourish-img');
+    if (!flourish || !img) return resolve();
+    document.getElementById('screen-onboard').style.display = 'none';
+    flourish.classList.add('show');
+    let stage = 1;
+    img.src = `ground_stage_${stage}.png`;
+    let interval;
+    const finish = () => {
+      clearInterval(interval);
+      flourish.removeEventListener('click', finish);
+      flourish.classList.remove('show');
+      // Match the 0.4s opacity transition before resolving so the dashboard
+      // doesn't pop in over a still-visible flourish.
+      setTimeout(resolve, 420);
+    };
+    interval = setInterval(() => {
+      stage++;
+      if (stage > 4) { finish(); return; }
+      img.src = `ground_stage_${stage}.png`;
+    }, 750);
+    flourish.addEventListener('click', finish);
+  });
 }
 
 function bootApp() {

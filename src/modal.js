@@ -5,8 +5,10 @@ import { formatDisplayDate } from './dates.js';
 import { computeStats } from './stats.js';
 import { showToast } from './toast.js';
 import { checkBadgesForStreak } from './badges.js';
-import { renderDashboard } from './render/dashboard.js';
+import { renderDashboard, currentSproutStage } from './render/dashboard.js';
 import { renderCalendar } from './render/calendar.js';
+import { launchConfetti } from './celebrate.js';
+import { getStageForStreak } from './constants.js';
 
 export function openModal(dateStr) {
   state.modalDate = dateStr;
@@ -55,13 +57,21 @@ export function saveModal() {
     loggedAt: existing ? existing.loggedAt : new Date().toISOString(),
   };
   saveData(appData);
+
+  // Detect sprout stage upgrade from this edit (e.g. backfilling a yes-day
+  // that bridges into a longer current run). Confetti below.
+  const sBefore = computeStats(appData);
+  const prevStage = currentSproutStage();
+  const newStage = getStageForStreak(sBefore);
+  const sproutUpgraded = savedResult === 'yes' && newStage > prevStage && prevStage > 0;
+
   closeModal();
-  renderDashboard();
+  renderDashboard({ animateSprout: savedResult === 'yes' });
   if (document.getElementById('screen-calendar').classList.contains('active')) renderCalendar();
   showToast('Saved');
   if (savedResult === 'yes') {
-    const s = computeStats(appData);
-    const streak = Math.max(s.currentStreak, s.best);
+    if (sproutUpgraded) launchConfetti();
+    const streak = Math.max(sBefore.currentStreak, sBefore.best);
     if (streak > 0) checkBadgesForStreak(streak, true);
   }
 }

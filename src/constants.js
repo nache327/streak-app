@@ -22,3 +22,19 @@ export const BADGES = [
 ];
 
 export const STORAGE_KEY = 'streak_app_v1';
+
+// Sprout-progression mapping. Stage 1=seed, 2=start, 3=build, 4=grow.
+// Daily: thresholds at 1 / 7 / 30 days. Weekly: 1 / 2 / 4 weeks (caps at GROW).
+export function getStageForStreak(s) {
+  const n = s ? s.currentStreak : 0;
+  if (s && s.goalType === 'weekly_target') {
+    if (n === 0) return 1;
+    if (n === 1) return 2;
+    if (n <= 3) return 3;
+    return 4;
+  }
+  if (n === 0) return 1;
+  if (n <= 6) return 2;
+  if (n <= 29) return 3;
+  return 4;
+}
