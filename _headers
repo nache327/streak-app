@@ -1,0 +1,20 @@
+# Cloudflare Pages reads this file natively (and GitHub Pages just ignores it,
+# so it's safe to keep in the repo while you're still on GH Pages).
+# Docs: https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
+
+# Service worker must NEVER be cached at the HTTP layer — otherwise updates
+# to it (including the CACHE-name bump that evicts stale shells) won't land.
+/OneSignalSDKWorker.js
+  Cache-Control: no-cache, must-revalidate
+/OneSignalSDKUpdaterWorker.js
+  Cache-Control: no-cache, must-revalidate
+
+# manifest.json drives PWA install — also keep fresh so icon/name swaps land.
+/manifest.json
+  Cache-Control: no-cache, must-revalidate
