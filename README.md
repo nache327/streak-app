@@ -1,4 +1,6 @@
-# Streak — Daily Discipline Tracker
+# Ground — Daily Discipline Tracker
+
+**Stay grounded.** *Plant. Nourish. Grow.*
 
 A privacy-first PWA habit tracker for one daily discipline. Native browser ES
 modules, no build step, no backend, no account. Push reminders via OneSignal +
@@ -10,7 +12,11 @@ One active goal. One question per day. Yes or no.
 
 The discipline that matters most is the one you can answer with two big buttons.
 Multi-goal support, social features, accountability partners — all deliberately
-excluded. Streak is meant to be small enough to use forever.
+excluded. Ground is meant to be small enough to use forever.
+
+The visual metaphor is a sprout emerging from a ground line. Daily check-ins
+nourish it. A missed day doesn't kill the sprout — it just doesn't grow that
+day. No shame loop.
 
 ## Running locally
 
@@ -27,68 +33,74 @@ Open `http://localhost:8080`. Push notifications require HTTPS or localhost
 ## Architecture
 
 ```
-streak-app/
-  index.html              # markup only + <script type="module" src="src/main.js">
-  styles.css              # all styles
-  manifest.json           # PWA manifest
-  OneSignalSDKWorker.js   # live service worker (push handler + PWA cache)
+streak-app/                  # folder kept for backwards-compat; product is Ground
+  index.html                 # markup only + <script type="module" src="src/main.js">
+  styles.css                 # all styles
+  manifest.json              # PWA manifest
+  OneSignalSDKWorker.js      # live service worker (push handler + PWA cache)
   OneSignalSDKUpdaterWorker.js
-  cloudflare-worker.js    # daily reminder cron (deploys to Cloudflare Workers)
-  streak-logo.png
-  streak-thumbnail.png    # also the apple-touch-icon / manifest icon
+  cloudflare-worker.js       # daily reminder cron (deploys to Cloudflare Workers)
+  verify.html                # self-test page — hit /verify.html for all-green
+  ground_logo.png            # wordmark + sprout, lime on transparent
+  ground_logo_2x.png         # retina wordmark
+  ground_icon[_180|_192|_1024].png  # sprout-only icons, transparent
+  ground_thumbnail.png       # square icon with #0a0a0a baked bg (manifest)
+  ground_stage_1..4.png      # sprout-progression stages (seed → grow)
   src/
-    main.js               # boot + static event binding
-    constants.js          # MILESTONES, BADGES, STORAGE_KEY
-    data.js               # load / save / createFreshState / migrate (v2)
-    dates.js              # todayStr, addDays, weekStart, weekEnd, listWeeksCovering
-    state.js              # shared mutable state container
-    stats.js              # type-aware computeStats (daily | weekly_target)
-    router.js             # showScreen
-    checkin.js            # logDay, editTodayInline, getMotivationLine
-    modal.js              # day-edit modal
-    confirm.js            # confirm modal
-    badges.js             # badge celebration + tracking
-    celebrate.js          # milestone banner + confetti
+    main.js                  # boot + static event binding + onboarding flourish
+    constants.js             # MILESTONES, BADGES, STORAGE_KEY, getStageForStreak
+    data.js                  # load / save / createFreshState / migrate (v2)
+    dates.js                 # todayStr, addDays, weekStart, weekEnd, listWeeksCovering
+    state.js                 # shared mutable state container
+    stats.js                 # type-aware computeStats (daily | weekly_target)
+    router.js                # showScreen
+    checkin.js               # logDay, editTodayInline, getMotivationLine
+    modal.js                 # day-edit modal
+    confirm.js               # confirm modal
+    badges.js                # badge celebration + tracking
+    celebrate.js             # milestone banner + confetti
     toast.js
-    notifs.js             # reminders (in-app + OneSignal push wiring)
-    goal.js               # goal rename (inline + settings)
-    export.js             # JSON export / import / reset
-    privacy.js            # PIN lock + biometric toggle (WebAuthn comes with native wrap)
-    pro.js                # isPro, showProPrompt, dev-only 7-tap gesture
+    notifs.js                # reminders (in-app + OneSignal push wiring)
+    goal.js                  # goal rename (inline + settings)
+    export.js                # JSON export / import / reset
+    privacy.js               # PIN lock + biometric toggle
+    pro.js                   # isPro, showProPrompt, dev-only 7-tap gesture
     render/
-      dashboard.js
+      dashboard.js           # renderDashboard + setSprout + currentSproutStage
       calendar.js
       stats.js
-      settings.js         # mode + schedule + privacy sections
+      settings.js            # mode + schedule + privacy sections
 ```
 
 ### Why ES modules with no build step
 
 Native browser modules cover everything we need: scoped imports, no globals,
-hot edits during dev. Skipping a bundler keeps the surface area small enough to
-maintain alone, and the app installs as a PWA without any deploy pipeline.
+hot edits during dev. Skipping a bundler keeps the surface area small enough
+to maintain alone, and the app installs as a PWA without any deploy pipeline.
 
 ### Persistence
 
-All state lives in `localStorage` under `streak_app_v1`. Schema is versioned
-(currently `version: 2`); `migrate()` in `data.js` upgrades older payloads in
-place on load. Backups exported to JSON are migrated on re-import.
+All state lives in `localStorage` under `streak_app_v1` (key kept verbatim
+across the Ground rebrand so existing user data isn't orphaned). Schema is
+versioned (currently `version: 2`); `migrate()` in `data.js` upgrades older
+payloads in place on load. Backups exported to JSON are migrated on re-import.
 
 ### Service worker
 
 `OneSignalSDKWorker.js` is the only registered service worker. It imports the
-OneSignal push handler and also serves the PWA cache (`streak-v6`). The
-previous standalone `sw.js` was removed.
+OneSignal push handler and also serves the PWA cache. The current cache name
+is `ground-v3` and it pre-caches `./`, the wordmark, and all four sprout
+stage images so the progression works offline.
 
 ### Push reminders
 
 Two channels:
 
 1. **Cloudflare Worker** (`cloudflare-worker.js`) — cron `0 0 * * *` UTC sends
-   one batched OneSignal notification at 8AM and another at 8PM in the user's
-   local timezone (OneSignal handles per-user delivery time via the
-   `delivery_time_of_day` + `delayed_option: 'timezone'` combo). Tagged
-   recipients only.
+   a batched OneSignal notification at 8AM and another at 8PM in each user's
+   local timezone (OneSignal handles per-user delivery time via
+   `delivery_time_of_day` + `delayed_option: 'timezone'`). Tagged recipients
+   only.
 2. **In-app `Notification` API** (`notifs.js`) — fires while the tab is open,
    covering the locked-screen gap on Android / desktop.
 
@@ -106,8 +118,8 @@ Independent dimensions:
 
 ### Daily mode
 
-Every day matters. The streak counts consecutive `yes` days. Best for sobriety,
-no-junk-food, or any avoid-style goal where strictness is the point.
+Every day matters. The streak counts consecutive `yes` days. Best for
+sobriety, no-junk-food, or any avoid-style goal where strictness is the point.
 
 ### Weekly target mode
 
@@ -116,6 +128,29 @@ consecutive **weeks** that hit the target. Missing a day or two in a week is
 fine. Adds **streak freezes**: every 7 yes-days earns 1 freeze (capped at 1
 stored free / 2 stored pro), auto-applied to past weeks that fell exactly 1
 day short. Frozen weeks are marked with a snowflake on the Monday cell.
+
+## Sprout progression
+
+The dashboard hero is a 4-stage sprout image that grows with the user's
+current streak. The user *sees* their sprout grow as they show up — daily,
+visible, dopamine-positive, and crucially: it never visually breaks.
+
+| Stage | Daily | Weekly |
+|---|---|---|
+| 1 — SEED | `currentStreak === 0` | 0 weeks |
+| 2 — START | 1–6 days | 1 week |
+| 3 — BUILD | 7–29 days | 2–3 weeks |
+| 4 — GROW | 30+ days | 4+ weeks |
+
+Crossing a threshold triggers a 450ms cross-fade between stages plus confetti.
+A missed day keeps the sprout at its current stage rather than dropping back
+to seed; only an actual streak reset to 0 returns it to seed. The badge
+system is a separate moment-reward layer (badges fire at 1/3/7/14/21/30/50/100
+days unchanged).
+
+The onboarding flow plays a 3-second sprout-stage cycle with the caption
+"Plant. Nourish. Grow." right after the user taps Start Tracking — sets the
+brand promise without a heavy explainer. Tap-to-skip.
 
 ## Privacy features
 
@@ -130,8 +165,8 @@ glancing housemate.
   export still works.
 - **Discreet notifications** — Notification bodies never include the goal
   name. (Already enforced; the toggle is the user-visible promise.)
-- **Background blur** — Default-on. Content blurs on `visibilitychange` so the
-  iOS app-switcher thumbnail doesn't show readable text.
+- **Background blur** — Default-on. Content blurs on `visibilitychange` /
+  `pagehide` so the iOS app-switcher thumbnail doesn't show readable text.
 
 ## Data shape (v2)
 
@@ -169,7 +204,7 @@ glancing housemate.
 ## Pro tier
 
 Real IAP receipt verification ships with the Capacitor wrap. For now `isPro`
-is a local boolean. Dev gesture to toggle: tap the **STREAK** wordmark in the
+is a local boolean. Dev gesture to toggle: tap the **GROUND** wordmark in the
 topbar 7 times within 3 seconds.
 
 **Gated** (free shows a Pro prompt):
@@ -185,6 +220,7 @@ topbar 7 times within 3 seconds.
 - 30-day trend chart and all stats cards
 - Both modes (do/avoid) and both types (daily/weekly_target)
 - One stored streak freeze (weekly mode)
+- The full 4-stage sprout progression
 - All privacy features (PIN lock, hide goal name, discreet notifications)
 - Both preset reminders (morning + evening)
 - Milestones, badges, confetti
@@ -199,11 +235,12 @@ topbar 7 times within 3 seconds.
 | `--text`    | `#f0f0f0` |
 | `--sub`     | `#888`    |
 | `--muted`   | `#444`    |
-| `--accent`  | `#e8f55a` (electric lime) |
+| `--accent`  | `#e8f55a` (electric lime — Ground brand color) |
 | `--success` | `#4dff91` |
 | `--fail`    | `#ff4d4d` (in-the-moment "No" only — never in history views) |
 
-Fonts: **Syne 800** display, **DM Sans** body, **DM Mono** for numbers.
+Fonts: **Syne 800** display (wordmark, headlines, big numbers), **DM Sans**
+body, **DM Mono** for inline numbers and dates.
 
 ## Extending
 
@@ -237,8 +274,21 @@ Moving parts that live outside this repo:
   `ONESIGNAL_REST_API_KEY`. Keep secret.
 - **Cloudflare Worker** — deploy `cloudflare-worker.js` with cron trigger
   `0 0 * * *` (midnight UTC). Env: `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`.
-- **PWA cache version** — bump `CACHE = 'streak-v6'` in
+- **PWA cache version** — bump `CACHE = 'ground-v3'` in
   `OneSignalSDKWorker.js` whenever a release should bust client caches.
+
+## Self-tests
+
+`/verify.html` imports the live modules and runs assertions on:
+
+- v1→v2 migration shape and idempotency
+- Date math (week boundaries, addDays)
+- `createFreshState` shape
+- Daily `computeStats` (wins/fails, currentStreak, best, rate, streak reset)
+- Weekly `computeStats` (target hit, freezes earned/applied, free/pro caps)
+- `winsThisMonth`
+
+Hit it on any device after deploying to confirm the model layer is green.
 
 ## Known limitations
 
